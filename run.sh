@@ -1,1 +1,0 @@
-gcc ares.c && ./a.out && mv ./a.out ./dist/a.out
