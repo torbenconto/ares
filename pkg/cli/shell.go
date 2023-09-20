@@ -6,12 +6,15 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+
+	"github.com/torbenconto/ares"
 )
 
 var cliName string = "ares "
+var env = ares.NewEnvironment()
 
 func printPrompt() {
-	fmt.Print(cliName, "> ")
+	fmt.Print(cliName, env.Pwd, " > ")
 }
 
 // clearScreen clears the terminal screen
@@ -35,19 +38,13 @@ func main() {
 		if strings.EqualFold("exit", text) {
 			return
 		} else {
-			args := strings.Split(text, " ")
-
-			command, err := IdentifyCommand(args[0])
+			out, e, err := env.Eval(text)
 			if err != nil {
-				fmt.Printf("Error: %v\n", err)
+				fmt.Printf("Eval error: %v\n", err)
+				return
 			}
-
-			argss, err := command.ExtractArgs(args)
-			if err != nil {
-				fmt.Printf("Error: %v\n", err)
-			}
-
-			fmt.Println(argss)
+			env = e
+			fmt.Println(out)
 		}
 		printPrompt()
 	}

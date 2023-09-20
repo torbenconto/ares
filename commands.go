@@ -1,28 +1,13 @@
-package main
+package ares
 
-import "fmt"
+import (
+	"fmt"
+)
+
+var cd = Command_cd()
 
 var Commands_Builtin = []Command{
-	Command{
-		Name: "help",
-
-		Args: []Arg{
-			Arg{
-				Name:      "cmd",
-				Shorthand: "c",
-				Param:     true,
-			},
-			Arg{
-				Name:      "amount",
-				Shorthand: "a",
-				Param:     false,
-			},
-		},
-
-		Run: func(args []Arg) (string, error) {
-			return fmt.Sprintf("%v", args), nil
-		},
-	},
+	cd,
 }
 
 func CommandsToMap(commands []Command) map[string]Command {
@@ -39,7 +24,7 @@ func CommandsToMap(commands []Command) map[string]Command {
 func IdentifyCommand(in string) (Command, error) {
 	commandmap := CommandsToMap(Commands_Builtin)
 
-	if commandmap[in].Args != nil {
+	if commandmap[in].Name != "" {
 		return commandmap[in], nil
 	}
 

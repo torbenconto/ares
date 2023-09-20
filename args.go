@@ -1,9 +1,10 @@
-package main
+package ares
 
 type Arg struct {
 	Name      string
 	Shorthand string
-	Value     string
+
+	value string
 
 	Param bool
 	Flag  bool

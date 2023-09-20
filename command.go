@@ -1,4 +1,4 @@
-package main
+package ares
 
 import (
 	"errors"
@@ -10,9 +10,11 @@ type Command struct {
 	Description string
 	Usage       string
 
+	env *Environment
+
 	Args []Arg
 
-	Run func(args []Arg) (string, error)
+	Run func(args []Arg, env *Environment) (string, *Environment, error)
 }
 
 func NewCommand(name, description, usage string, args []Arg) *Command {
@@ -22,6 +24,10 @@ func NewCommand(name, description, usage string, args []Arg) *Command {
 		Usage:       usage,
 		Args:        args,
 	}
+
+}
+
+func GetArg(in []Arg) (Arg, error) {
 
 }
 
@@ -101,7 +107,7 @@ func (c *Command) ExtractArgs(args []string) ([]Arg, error) {
 
 		if paramValue.Param {
 			argValue = args[i]
-			extractedArgs = append(extractedArgs, Arg{Name: paramValue.Name, Shorthand: paramValue.Shorthand, Value: argValue, Flag: paramValue.Flag})
+			extractedArgs = append(extractedArgs, Arg{Name: paramValue.Name, Shorthand: paramValue.Shorthand, value: argValue, Flag: paramValue.Flag})
 			i++
 			continue
 		}
@@ -137,7 +143,7 @@ func (c *Command) ExtractArgs(args []string) ([]Arg, error) {
 			return nil, ErrInvalidArgument
 		}
 
-		extractedArgs = append(extractedArgs, Arg{Name: foundArg.Name, Shorthand: foundArg.Shorthand, Value: argValue, Flag: foundArg.Flag})
+		extractedArgs = append(extractedArgs, Arg{Name: foundArg.Name, Shorthand: foundArg.Shorthand, value: argValue, Flag: foundArg.Flag})
 		i++
 	}
 
