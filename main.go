@@ -42,10 +42,12 @@ func main() {
 				fmt.Printf("Error: %v\n", err)
 			}
 
-			_, err = command.ExtractArgs(args)
+			argss, err := command.ExtractArgs(args)
 			if err != nil {
 				fmt.Printf("Error: %v\n", err)
 			}
+
+			fmt.Println(argss)
 		}
 		printPrompt()
 	}

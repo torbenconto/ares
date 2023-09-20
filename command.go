@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 )
 
@@ -74,18 +75,39 @@ func (c *Command) ArgsToMap() map[ArgMapKey]Arg {
 var ErrInvalidArgument = errors.New("invalid argument: no data provided to non-flag argument")
 
 func (c *Command) ExtractArgs(args []string) ([]Arg, error) {
-
 	args = args[1:]
 
 	argMap := c.ArgsToMap()
 	var extractedArgs []Arg
 
+	paramsMap := make(map[string]Arg)
+
 	i := 0
+	fmt.Println(c.Args)
+	for i < len(c.Args) {
+		if c.Args[i].Param {
+			paramsMap[string(i+1)] = c.Args[i]
+		}
+
+		i++
+
+	}
+
+	i = 0
 	for i < len(args) {
 		argName := strings.ReplaceAll(args[i], "-", "")
 
 		var foundArg Arg
 		var argValue string
+
+		paramValue := paramsMap[string(i+1)]
+
+		if paramValue.Param {
+			argValue = args[i]
+			extractedArgs = append(extractedArgs, Arg{Name: paramValue.Name, Shorthand: paramValue.Shorthand, Value: argValue, Flag: paramValue.Flag})
+			i++
+			continue
+		}
 
 		if arg, ok := argMap[ArgMapKey{Name: argName}]; ok {
 			foundArg = arg
@@ -101,7 +123,7 @@ func (c *Command) ExtractArgs(args []string) ([]Arg, error) {
 					found = true
 					foundArg = cmdArg
 
-					if !cmdArg.Flag && i+1 < len(args) {
+					if !cmdArg.Flag && !cmdArg.Param && i+1 < len(args) {
 						argValue = args[i+1]
 						i++
 					}
@@ -120,6 +142,21 @@ func (c *Command) ExtractArgs(args []string) ([]Arg, error) {
 
 		extractedArgs = append(extractedArgs, Arg{Name: foundArg.Name, Shorthand: foundArg.Shorthand, Value: argValue, Flag: foundArg.Flag})
 		i++
+	}
+
+	for _, cmdArg := range c.Args {
+		if cmdArg.Required {
+			found := false
+			for _, extractedArg := range extractedArgs {
+				if cmdArg.Name == extractedArg.Name {
+					found = true
+					break
+				}
+			}
+			if !found {
+				return nil, errors.New("Missing required argument: " + cmdArg.Name)
+			}
+		}
 	}
 
 	return extractedArgs, nil

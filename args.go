@@ -5,6 +5,7 @@ type Arg struct {
 	Shorthand string
 	Value     string
 
+	Param    bool
 	Required bool
 	Flag     bool
 }

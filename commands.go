@@ -10,6 +10,12 @@ var Commands_Builtin = []Command{
 			Arg{
 				Name:      "cmd",
 				Shorthand: "c",
+				Param:     true,
+			},
+			Arg{
+				Name:      "amount",
+				Shorthand: "a",
+				Param:     false,
 			},
 		},
 
