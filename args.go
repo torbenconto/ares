@@ -3,6 +3,7 @@ package main
 type Arg struct {
 	Name      string
 	Shorthand string
+	Value     string
 
 	Flag bool
 }

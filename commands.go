@@ -10,8 +10,11 @@ var Commands_Builtin = []Command{
 			Arg{
 				Name:      "cmd",
 				Shorthand: "c",
-				Flag:      true,
 			},
+		},
+
+		Run: func(args []Arg) (string, error) {
+			return fmt.Sprintf("%v", args), nil
 		},
 	},
 }

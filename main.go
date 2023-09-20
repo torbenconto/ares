@@ -39,10 +39,13 @@ func main() {
 
 			command, err := IdentifyCommand(args[0])
 			if err != nil {
-				fmt.Printf("Error: %v", err)
+				fmt.Printf("Error: %v\n", err)
 			}
 
-			fmt.Println(command.Name)
+			_, err = command.ExtractArgs(args)
+			if err != nil {
+				fmt.Printf("Error: %v\n", err)
+			}
 		}
 		printPrompt()
 	}
