@@ -7,16 +7,17 @@ import (
 	"github.com/torbenconto/ares/pkg/fs"
 )
 
-func Command_cd() Command {
+func Command_ls() Command {
 	return Command{
-		Name:        "cd",
-		Description: "Change the shell working directory.",
-		Usage:       "cd [directory]",
+		Name:        "ls",
+		Description: "List information about the FILEs (the current directory by default.",
+		Usage:       "ls [directory] [flags]",
 
 		Args: []Arg{
 			Arg{
-				Name:  "[directory]",
-				Param: true,
+				Name:          "[directory]",
+				Default_value: ".",
+				Param:         true,
 			},
 		},
 

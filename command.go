@@ -27,8 +27,14 @@ func NewCommand(name, description, usage string, args []Arg) *Command {
 
 }
 
-func GetArg(in []Arg) (Arg, error) {
+func GetArg(in []Arg, target string) (Arg, error) {
+	for _, arg := range in {
+		if arg.Name == target {
+			return arg, nil
+		}
+	}
 
+	return Arg{}, errors.New("cannot get argument: " + target)
 }
 
 type ArgMapKey struct {
@@ -140,7 +146,11 @@ func (c *Command) ExtractArgs(args []string) ([]Arg, error) {
 		}
 
 		if argValue == "" && !foundArg.Flag {
-			return nil, ErrInvalidArgument
+			if foundArg.Default_value != "" {
+				argValue = foundArg.Default_value
+			} else {
+				return nil, ErrInvalidArgument
+			}
 		}
 
 		extractedArgs = append(extractedArgs, Arg{Name: foundArg.Name, Shorthand: foundArg.Shorthand, value: argValue, Flag: foundArg.Flag})

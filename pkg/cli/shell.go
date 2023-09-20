@@ -26,7 +26,6 @@ func clearScreen() {
 
 func cleanInput(text string) string {
 	output := strings.TrimSpace(text)
-	output = strings.ToLower(output)
 	return output
 }
 
@@ -41,10 +40,11 @@ func main() {
 			out, e, err := env.Eval(text)
 			if err != nil {
 				fmt.Printf("Eval error: %v\n", err)
-				return
+			} else {
+				env = e
+				fmt.Println(out)
 			}
-			env = e
-			fmt.Println(out)
+
 		}
 		printPrompt()
 	}

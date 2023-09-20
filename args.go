@@ -4,7 +4,8 @@ type Arg struct {
 	Name      string
 	Shorthand string
 
-	value string
+	value         string
+	Default_value string
 
 	Param bool
 	Flag  bool
