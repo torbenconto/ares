@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-var cliName string = "simpleREPL"
+var cliName string = "ares "
 
 func printPrompt() {
 	fmt.Print(cliName, "> ")
