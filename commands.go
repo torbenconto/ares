@@ -5,9 +5,11 @@ import (
 )
 
 var cd = Command_cd()
+var ls = Command_ls()
 
 var Commands_Builtin = []Command{
 	cd,
+	ls,
 }
 
 func CommandsToMap(commands []Command) map[string]Command {
