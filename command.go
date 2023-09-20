@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"strings"
 )
 
@@ -83,14 +82,12 @@ func (c *Command) ExtractArgs(args []string) ([]Arg, error) {
 	paramsMap := make(map[string]Arg)
 
 	i := 0
-	fmt.Println(c.Args)
 	for i < len(c.Args) {
 		if c.Args[i].Param {
 			paramsMap[string(i+1)] = c.Args[i]
 		}
 
 		i++
-
 	}
 
 	i = 0
@@ -132,7 +129,7 @@ func (c *Command) ExtractArgs(args []string) ([]Arg, error) {
 			}
 
 			if !found {
-				return nil, errors.New("Invalid argument: " + argName)
+				return nil, errors.New("Invalid argument: " + args[i])
 			}
 		}
 
@@ -142,21 +139,6 @@ func (c *Command) ExtractArgs(args []string) ([]Arg, error) {
 
 		extractedArgs = append(extractedArgs, Arg{Name: foundArg.Name, Shorthand: foundArg.Shorthand, Value: argValue, Flag: foundArg.Flag})
 		i++
-	}
-
-	for _, cmdArg := range c.Args {
-		if cmdArg.Required {
-			found := false
-			for _, extractedArg := range extractedArgs {
-				if cmdArg.Name == extractedArg.Name {
-					found = true
-					break
-				}
-			}
-			if !found {
-				return nil, errors.New("Missing required argument: " + cmdArg.Name)
-			}
-		}
 	}
 
 	return extractedArgs, nil

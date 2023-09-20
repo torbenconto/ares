@@ -5,9 +5,8 @@ type Arg struct {
 	Shorthand string
 	Value     string
 
-	Param    bool
-	Required bool
-	Flag     bool
+	Param bool
+	Flag  bool
 }
 
 func NewArg(name, shorthand string, flag bool) *Arg {
