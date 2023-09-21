@@ -30,7 +30,7 @@ func Command_cd() Command {
 
 			if fs.DirExists(dir) {
 				env.Pwd = filepath.Join(env.Pwd, arg.value)
-				return env.Pwd, env, nil
+				return "", env, nil
 			} else {
 				return "", nil, errors.New("directory does not exist")
 			}

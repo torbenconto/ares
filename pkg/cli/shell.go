@@ -42,7 +42,10 @@ func main() {
 				fmt.Printf("Eval error: %v\n", err)
 			} else {
 				env = e
-				fmt.Println(out)
+				if out != "" {
+					fmt.Println(out)
+				}
+
 			}
 
 		}
