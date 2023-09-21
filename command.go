@@ -2,6 +2,7 @@ package ares
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 )
 
@@ -102,6 +103,13 @@ func (c *Command) ExtractArgs(args []string) ([]Arg, error) {
 		i++
 	}
 
+	for k, v := range paramsMap {
+		fmt.Println(paramsMap[k], v)
+		if paramsMap[k].Default_value != "" {
+			args = append(args, paramsMap[k].Default_value)
+		}
+	}
+
 	i = 0
 	for i < len(args) {
 		argName := strings.ReplaceAll(args[i], "-", "")
@@ -146,11 +154,7 @@ func (c *Command) ExtractArgs(args []string) ([]Arg, error) {
 		}
 
 		if argValue == "" && !foundArg.Flag {
-			if foundArg.Default_value != "" {
-				argValue = foundArg.Default_value
-			} else {
-				return nil, ErrInvalidArgument
-			}
+			return nil, ErrInvalidArgument
 		}
 
 		extractedArgs = append(extractedArgs, Arg{Name: foundArg.Name, Shorthand: foundArg.Shorthand, value: argValue, Flag: foundArg.Flag})
