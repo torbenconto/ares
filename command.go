@@ -2,7 +2,6 @@ package ares
 
 import (
 	"errors"
-	"fmt"
 	"strings"
 )
 
@@ -168,6 +167,5 @@ func (c *Command) ExtractArgs(args []string) ([]Arg, error) {
 		j++
 	}
 
-	fmt.Println(extractedArgs)
 	return extractedArgs, nil
 }
