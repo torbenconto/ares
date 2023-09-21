@@ -86,52 +86,59 @@ func (c *Command) ArgsToMap() map[ArgMapKey]Arg {
 
 var ErrInvalidArgument = errors.New("invalid argument: no data provided to non-flag argument")
 
+// When using multiple param arguments, the n-ordened params in "args" sometimes randomly get switched
 func (c *Command) ExtractArgs(args []string) ([]Arg, error) {
 	args = args[1:]
 
 	argMap := c.ArgsToMap()
 	var extractedArgs []Arg
 
-	paramsMap := make(map[string]Arg)
+	paramsMap := make(map[int]Arg)
 
 	i := 0
 	for i < len(c.Args) {
 		if c.Args[i].Param {
-			paramsMap[string(i+1)] = c.Args[i]
+			paramsMap[i+1] = c.Args[i]
 		}
 
 		i++
 	}
 
-	for k, v := range paramsMap {
-		fmt.Println(paramsMap[k], v)
+	default_count := 0
+	for k, _ := range paramsMap {
 		if paramsMap[k].Default_value != "" {
 			args = append(args, paramsMap[k].Default_value)
+			default_count++
 		}
 	}
 
-	i = 0
-	for i < len(args) {
-		argName := strings.ReplaceAll(args[i], "-", "")
+	j := 0
+	for j < len(args) {
+		argName := strings.ReplaceAll(args[j], "-", "")
 
 		var foundArg Arg
 		var argValue string
 
-		paramValue := paramsMap[string(i+1)]
+		paramValue := paramsMap[j+1]
 
 		if paramValue.Param {
-			argValue = args[i]
+
+			if len(args) != default_count && len(args) != 0 {
+				args = args[:len(args)-default_count]
+			}
+
+			argValue = args[j]
 			extractedArgs = append(extractedArgs, Arg{Name: paramValue.Name, Shorthand: paramValue.Shorthand, value: argValue, Flag: paramValue.Flag})
-			i++
+			j++
 			continue
 		}
 
 		if arg, ok := argMap[ArgMapKey{Name: argName}]; ok {
 			foundArg = arg
 
-			if !arg.Flag && i+1 < len(args) {
-				argValue = args[i+1]
-				i++
+			if !arg.Flag && j+1 < len(args) {
+				argValue = args[j+1]
+				j++
 			}
 		} else {
 			found := false
@@ -140,9 +147,9 @@ func (c *Command) ExtractArgs(args []string) ([]Arg, error) {
 					found = true
 					foundArg = cmdArg
 
-					if !cmdArg.Flag && !cmdArg.Param && i+1 < len(args) {
-						argValue = args[i+1]
-						i++
+					if !cmdArg.Flag && !cmdArg.Param && j+1 < len(args) {
+						argValue = args[j+1]
+						j++
 					}
 					break
 				}
@@ -158,8 +165,9 @@ func (c *Command) ExtractArgs(args []string) ([]Arg, error) {
 		}
 
 		extractedArgs = append(extractedArgs, Arg{Name: foundArg.Name, Shorthand: foundArg.Shorthand, value: argValue, Flag: foundArg.Flag})
-		i++
+		j++
 	}
 
+	fmt.Println(extractedArgs)
 	return extractedArgs, nil
 }
