@@ -16,18 +16,18 @@ func NewEnvironment() *Environment {
 	}
 }
 
-func (e *Environment) Eval(in string) (string, *Environment, error) {
+func (e *Environment) Eval(in string) (*Environment, error) {
 	strargs := strings.Split(in, " ")
 
 	command, err := IdentifyCommand(strargs[0])
 	if err != nil {
-		return "", e, err
+		return e, err
 	}
 
 	if command.Args != nil {
 		args, err := command.ExtractArgs(strargs)
 		if err != nil {
-			return "", e, err
+			return e, err
 		}
 
 		return command.Run(args, e)

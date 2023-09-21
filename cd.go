@@ -20,19 +20,19 @@ func Command_cd() Command {
 			},
 		},
 
-		Run: func(args []Arg, env *Environment) (string, *Environment, error) {
+		Run: func(args []Arg, env *Environment) (*Environment, error) {
 			arg, err := GetArg(args, "[directory]")
 			if err != nil {
-				return "", nil, err
+				return nil, err
 			}
 
 			dir := filepath.Join(env.Pwd, arg.value)
 
 			if fs.DirExists(dir) {
 				env.Pwd = filepath.Join(env.Pwd, arg.value)
-				return "", env, nil
+				return env, nil
 			} else {
-				return "", nil, errors.New("directory does not exist")
+				return nil, errors.New("directory does not exist")
 			}
 		},
 	}

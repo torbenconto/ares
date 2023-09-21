@@ -14,7 +14,7 @@ type Command struct {
 
 	Args []Arg
 
-	Run func(args []Arg, env *Environment) (string, *Environment, error)
+	Run func(args []Arg, env *Environment) (*Environment, error)
 }
 
 func NewCommand(name, description, usage string, args []Arg) *Command {

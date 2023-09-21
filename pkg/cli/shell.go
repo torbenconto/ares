@@ -37,15 +37,9 @@ func main() {
 		if strings.EqualFold("exit", text) {
 			return
 		} else {
-			out, e, err := env.Eval(text)
+			_, err := env.Eval(text)
 			if err != nil {
 				fmt.Printf("Eval error: %v\n", err)
-			} else {
-				env = e
-				if out != "" {
-					fmt.Println(out)
-				}
-
 			}
 
 		}
