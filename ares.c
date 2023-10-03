@@ -1,5 +1,4 @@
 #include "ares.h"
-#include "config.h"
 #include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
@@ -10,7 +9,6 @@
 #include <termios.h>
 #include <unistd.h>
 
-struct Config C;
 
 enum editorKey {
   ARROW_LEFT = 1000,
@@ -23,6 +21,22 @@ enum editorKey {
   PAGE_UP,
   PAGE_DOWN
 };
+
+typedef struct erow {
+  int size;
+  char *chars;
+} erow;
+
+struct Config {
+  int cx, cy;
+  int screenrows;
+  int screencols;
+  int numrows;
+  erow row;
+  struct termios orig_termios;
+};
+
+struct Config C;
 
 void die(const char *s) {
   write(STDOUT_FILENO, "\x1b[2J", 4);
@@ -227,6 +241,7 @@ void editorRefreshScreen() {
   abFree(&ab);
 }
 
+/*** input ***/
 
 void editorMoveCursor(int key) {
   switch (key) {
