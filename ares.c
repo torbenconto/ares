@@ -4,6 +4,11 @@
 #include <ctype.h>
 #include <stdio.h>
 
+void die(const char *e) {
+    perror(e);
+    exit(1);
+}
+
 int main() {  
     enableRawMode();
 
