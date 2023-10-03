@@ -13,7 +13,9 @@
 
 typedef struct erow {
   int size;
+  int rsize;
   char *chars;
+  char *render;
 } erow;
 
 struct Config {
@@ -132,7 +134,24 @@ void appendRow(char *s, size_t len) {
   C.row[at].chars = malloc(len + 1);
   memcpy(C.row[at].chars, s, len);
   C.row[at].chars[len] = '\0';
+
+  C.row[at].rsize = 0;
+  C.row[at].render = NULL;
+  editorUpdateRow(&C.row[at]);
+
   C.numrows++;
+}
+
+void updateRow(erow *row) {
+  free(row->render);
+  row->render = malloc(row->size + 1);
+  int j;
+  int idx = 0;
+  for (j = 0; j < row->size; j++) {
+    row->render[idx++] = row->chars[j];
+  }
+  row->render[idx] = '\0';
+  row->rsize = idx;
 }
 
 void refreshScreen() {
