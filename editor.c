@@ -6,6 +6,13 @@
 #include <stdio.h>
 #include <sys/ioctl.h>
 
+enum editorKey {
+  ARROW_LEFT = 1000,
+  ARROW_RIGHT,
+  ARROW_UP,
+  ARROW_DOWN,
+};
+
 void clearScreen() {
     write(STDOUT_FILENO, "\x1b[2J", 4);
 }
@@ -14,10 +21,42 @@ void resetCursor() {
     write(STDOUT_FILENO, "\x1b[H", 3);
 }
 
-void drawRows(int rows) {
-    for (int y = 0; y < rows; y++) {
-        write(STDOUT_FILENO, "~", 1);
+void moveCursor(int key, struct positions p) {
+  switch (key) {
+    case ARROW_LEFT:
+      p.x--;
+      break;
+    case ARROW_RIGHT:
+      p.x++;
+      break;
+    case ARROW_UP:
+      p.y--;
+      break;
+    case ARROW_DOWN:
+      p.y++;
+      break;
+  }
+}
 
+void drawRows(int rows, int cols) {
+    for (int y = 0; y < rows; y++) {
+        if (y == rows / 3) {
+            char welcome[80];
+            int welcomelen = snprintf(welcome, sizeof(welcome),
+                "Ares text editor -- version %s", ARES_VERSION);
+        if (welcomelen > cols) welcomelen = cols;
+              int padding = (cols - welcomelen) / 2;
+            if (padding) {
+                write(STDOUT_FILENO, "~", 1);
+                padding--;
+            }
+            while (padding--) write(STDOUT_FILENO, " ", 1);
+            write(STDOUT_FILENO, welcome, welcomelen);
+        } else {
+            write(STDOUT_FILENO, "~", 1);
+        }
+
+        write(STDOUT_FILENO, "\x1b[K", 3);
         if (y < rows - 1) {
             write(STDOUT_FILENO, "\r\n", 2);
         }
@@ -36,25 +75,46 @@ int getWindowSize(int *rows, int *cols) {
     }
 }
 
-char readKey() {
+int readKey() {
     int nread;
     char c;
 
     while ((nread = read(STDIN_FILENO, &c, 1)) != 1) {
         if (nread == -1 && errno != EAGAIN) die("read");
     }
+    if (c == '\x1b') {
+    char seq[3];
+    if (read(STDIN_FILENO, &seq[0], 1) != 1) return '\x1b';
+    if (read(STDIN_FILENO, &seq[1], 1) != 1) return '\x1b';
+    if (seq[0] == '[') {
+      switch (seq[1]) {
+        case 'A': return ARROW_UP;
+        case 'B': return ARROW_DOWN;
+        case 'C': return ARROW_RIGHT;
+        case 'D': return ARROW_LEFT;
+      }
+    }
+    return '\x1b';
+  } else {
     return c;
+  }
 }
 
-void processKeypress() {
-    char c = readKey();
+void processKeypress(struct positions p) {
+    int c = readKey();
 
     switch (c) {
         case CTRL_KEY(EXIT_KEY):
-        write(STDOUT_FILENO, "\x1b[2J", 4);
-        write(STDOUT_FILENO, "\x1b[H", 3);
-        exit(0);
-        break;
+            write(STDOUT_FILENO, "\x1b[2J", 4);
+            write(STDOUT_FILENO, "\x1b[H", 3);
+            exit(0);
+            break;
+        case ARROW_UP:
+        case ARROW_DOWN:
+        case ARROW_LEFT:
+        case ARROW_RIGHT:
+            moveCursor(c, p);
+            break;
     }
 }
 

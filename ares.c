@@ -14,6 +14,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+struct positions p;
+
 void die(const char *e) {
     write(STDOUT_FILENO, "\x1b[2J", 4);
     write(STDOUT_FILENO, "\x1b[H", 3);
@@ -23,6 +25,9 @@ void die(const char *e) {
 }
 
 int main() {  
+    p.x = 0;
+    p.y = 0;
+
     enableRawMode();
 
     int x, y;
@@ -30,13 +35,20 @@ int main() {
 
 
     for (;;) {
-        clearScreen();
+        write(STDOUT_FILENO, "\x1b[?25l", 6);
+
         resetCursor();
 
-        drawRows(x);
+        drawRows(x, y);
+        char buf[32];
+        snprintf(buf, sizeof(buf), "\x1b[%d;%dH", p.y + 1, p.x + 1);
+        write(STDOUT_FILENO, buf, strlen(buf));
 
+        resetCursor();
 
-        processKeypress();
+        write(STDOUT_FILENO, "\x1b[?25h", 6);
+
+        processKeypress(p);
     }
     return 0;
 }
