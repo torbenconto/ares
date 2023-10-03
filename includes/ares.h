@@ -3,8 +3,11 @@
 
 #define ARES_VERSION "0.0.1"
 
-#define CTRL_KEY(k) (k & 0x1f)
+#define SIDE_CHARACTER "~"
 #define EXIT_KEY 113 // q
+
+#define CTRL_KEY(k) (k & 0x1f)
+
 
 struct positions {
     int x;

@@ -21,7 +21,7 @@ struct Config {
   int screenrows;
   int screencols;
   int numrows;
-  erow row;
+  erow *row;
   struct termios orig_termios;
 };
 
@@ -56,7 +56,7 @@ void enableRawMode() {
 }
 
 void open(char *filename) {
-  FILE *fp = fopen(filename, "r");
+ FILE *fp = fopen(filename, "r");
   if (!fp) die("fopen");
 
   char *line = NULL;
@@ -67,11 +67,7 @@ void open(char *filename) {
     while (linelen > 0 && (line[linelen - 1] == '\n' ||
                            line[linelen - 1] == '\r'))
       linelen--;
-    C.row.size = linelen;
-    C.row.chars = malloc(linelen + 1);
-    memcpy(C.row.chars, line, linelen);
-    C.row.chars[linelen] = '\0';
-    C.numrows = 1;
+    appendRow(line, linelen);
   }
   free(line);
   fclose(fp);
@@ -82,25 +78,25 @@ void drawRows(struct abuf *ab) {
   int y;
   for (y = 0; y < C.screenrows; y++) {
     if (y >= C.numrows) {
-      if (y == C.screenrows / 3) {
+      if (C.numrows == 0 && y == C.screenrows / 3) {
         char welcome[80];
         int welcomelen = snprintf(welcome, sizeof(welcome),
           "Ares -- version %s", ARES_VERSION);
         if (welcomelen > C.screencols) welcomelen = C.screencols;
         int padding = (C.screencols - welcomelen) / 2;
         if (padding) {
-          abAppend(ab, "~", 1);
+          abAppend(ab, SIDE_CHARACTER, 1);
           padding--;
         }
         while (padding--) abAppend(ab, " ", 1);
         abAppend(ab, welcome, welcomelen);
       } else {
-        abAppend(ab, "~", 1);
+        abAppend(ab, SIDE_CHARACTER, 1);
       }
     } else {
-      int len = C.row.size;
+      int len = C.row->size;
       if (len > C.screencols) len = C.screencols;
-      abAppend(ab, C.row.chars, len);
+      abAppend(ab, C.row->chars, len);
     }
 
     abAppend(ab, "\x1b[K", 3);
@@ -108,6 +104,16 @@ void drawRows(struct abuf *ab) {
       abAppend(ab, "\r\n", 2);
     }
   }
+}
+
+void appendRow(char *s, size_t len) {
+  C.row = realloc(C.row, sizeof(erow) * (C.numrows + 1));
+  int at = C.numrows;
+  C.row[at].size = len;
+  C.row[at].chars = malloc(len + 1);
+  memcpy(C.row[at].chars, s, len);
+  C.row[at].chars[len] = '\0';
+  C.numrows++;
 }
 
 void refreshScreen() {
@@ -194,6 +200,7 @@ void initEditor() {
   C.cx = 0;
   C.cy = 0;
   C.numrows = 0;
+  C.row = NULL;
 
   if (getWindowSize(&C.screenrows, &C.screencols) == -1) die("getWindowSize");
 }
