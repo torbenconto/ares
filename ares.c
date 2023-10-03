@@ -1,5 +1,6 @@
 #include "includes/ares.h"
 #include "includes/keys.h"
+#include "includes/buffer.h"
 #include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
@@ -77,26 +78,6 @@ void editorOpen(char *filename) {
 }
 
 
-struct abuf {
-  char *b;
-  int len;
-};
-
-#define ABUF_INIT {NULL, 0}
-
-void abAppend(struct abuf *ab, const char *s, int len) {
-  char *new = realloc(ab->b, ab->len + len);
-
-  if (new == NULL) return;
-  memcpy(&new[ab->len], s, len);
-  ab->b = new;
-  ab->len += len;
-}
-
-void abFree(struct abuf *ab) {
-  free(ab->b);
-}
-
 void editorDrawRows(struct abuf *ab) {
   int y;
   for (y = 0; y < C.screenrows; y++) {
@@ -147,7 +128,6 @@ void editorRefreshScreen() {
   abFree(&ab);
 }
 
-/*** input ***/
 
 void editorMoveCursor(int key) {
   switch (key) {

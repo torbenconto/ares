@@ -37,7 +37,6 @@ int getCursorPosition(int *rows, int *cols) {
   return 0;
 }
 
-
 int readKey() {
   int nread;
   char c;
