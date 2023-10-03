@@ -74,6 +74,15 @@ void open(char *filename) {
   fclose(fp);
 }
 
+void scroll() {
+    if (C.cy < C.rowoff) {
+        C.rowoff = C.cy;
+    }
+    if (C.cy >= C.rowoff + C.screenrows) {
+        C.rowoff = C.cy - C.screenrows + 1;
+    }
+}
+
 
 void drawRows(struct abuf *ab) {
   int y;
