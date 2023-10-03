@@ -146,8 +146,8 @@ void refreshScreen() {
   drawRows(&ab);
 
   char buf[32];
-  snprintf(buf, sizeof(buf), "\x1b[%d;%dH", (C.cy - C.rowoff) + 1, C.cx + 1);
-
+  snprintf(buf, sizeof(buf), "\x1b[%d;%dH", (C.cy - C.rowoff) + 1,
+                                            (C.cx - C.coloff) + 1);
   abAppend(&ab, buf, strlen(buf));
 
   abAppend(&ab, "\x1b[?25h", 6);
@@ -158,6 +158,7 @@ void refreshScreen() {
 
 
 void moveCursor(int key) {
+  erow *row = (C.cy >= C.numrows) ? NULL : &C.row[C.cy];
   switch (key) {
     case ARROW_LEFT:
       if (C.cx != 0) {
@@ -165,7 +166,9 @@ void moveCursor(int key) {
       }
       break;
     case ARROW_RIGHT:
-      C.cx++;
+        if (row && C.cx < row->size) {
+            C.cx++;
+        }
       break;
     case ARROW_UP:
       if (C.cy != 0) {
