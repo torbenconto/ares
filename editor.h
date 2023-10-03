@@ -4,7 +4,7 @@
 #include "ares.h"
 
 int readKey();
-void processKeypress(struct positions p);
+void processKeypress(struct positions p, int rows);
 
 int getWindowSize(int *rows, int *cols);
 int getCursorPosition(int *rows, int *cols);

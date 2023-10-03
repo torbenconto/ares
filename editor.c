@@ -11,6 +11,8 @@ enum editorKey {
   ARROW_RIGHT,
   ARROW_UP,
   ARROW_DOWN,
+  PAGE_UP,
+  PAGE_DOWN
 };
 
 void clearScreen() {
@@ -87,6 +89,15 @@ int readKey() {
     if (read(STDIN_FILENO, &seq[0], 1) != 1) return '\x1b';
     if (read(STDIN_FILENO, &seq[1], 1) != 1) return '\x1b';
     if (seq[0] == '[') {
+              if (seq[1] >= '0' && seq[1] <= '9') {
+        if (read(STDIN_FILENO, &seq[2], 1) != 1) return '\x1b';
+        if (seq[2] == '~') {
+          switch (seq[1]) {
+            case '5': return PAGE_UP;
+            case '6': return PAGE_DOWN;
+          }
+        }
+      } else {
       switch (seq[1]) {
         case 'A': return ARROW_UP;
         case 'B': return ARROW_DOWN;
@@ -94,13 +105,14 @@ int readKey() {
         case 'D': return ARROW_LEFT;
       }
     }
+    }
     return '\x1b';
   } else {
     return c;
   }
 }
 
-void processKeypress(struct positions p) {
+void processKeypress(struct positions p, int rows) {
     int c = readKey();
 
     switch (c) {
@@ -109,6 +121,14 @@ void processKeypress(struct positions p) {
             write(STDOUT_FILENO, "\x1b[H", 3);
             exit(0);
             break;
+        case PAGE_UP:
+        case PAGE_DOWN:
+        {
+            int times = rows;
+            while (times--)
+            moveCursor(c == PAGE_UP ? ARROW_UP : ARROW_DOWN, p);
+        }
+        break;
         case ARROW_UP:
         case ARROW_DOWN:
         case ARROW_LEFT:
