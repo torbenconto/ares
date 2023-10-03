@@ -48,7 +48,7 @@ int main() {
 
         write(STDOUT_FILENO, "\x1b[?25h", 6);
 
-        processKeypress(p, x);
+        processKeypress(p, x, y);
     }
     return 0;
 }
