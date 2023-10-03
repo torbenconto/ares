@@ -181,6 +181,11 @@ void moveCursor(int key) {
       }
       break;
   }
+  row = (C.cy >= C.numrows) ? NULL : &C.row[C.cy];
+  int rowlen = row ? row->size : 0;
+  if (C.cx > rowlen) {
+    C.cx = rowlen;
+  }
 }
 
 void processKeypress() {
