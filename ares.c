@@ -128,6 +128,8 @@ void appendRow(char *s, size_t len) {
 }
 
 void refreshScreen() {
+  scroll();
+
   struct abuf ab = ABUF_INIT;
 
   abAppend(&ab, "\x1b[?25l", 6);
@@ -164,7 +166,7 @@ void moveCursor(int key) {
       }
       break;
     case ARROW_DOWN:
-      if (C.cy != C.screenrows - 1) {
+      if (C.cy < C.numrows) {
         C.cy++;
       }
       break;
