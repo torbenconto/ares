@@ -25,9 +25,16 @@ void die(const char *e) {
 int main() {  
     enableRawMode();
 
+    int x, y;
+    if (getWindowSize(&x, &y) == -1) die("getWindowSize");
+
+
     for (;;) {
         clearScreen();
         resetCursor();
+
+        drawRows(x);
+
 
         processKeypress();
     }
