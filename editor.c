@@ -1,5 +1,5 @@
-#include "editor.h"
-#include "keys.h"
+#include "includes/editor.h"
+#include "includes/keys.h"
 #include <unistd.h>
 #include <errno.h>
 #include <sys/ioctl.h>
