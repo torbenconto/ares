@@ -272,7 +272,7 @@ void editorProcessKeypress() {
   int c = editorReadKey();
 
   switch (c) {
-    case CTRL_KEY('q'):
+    case CTRL_KEY(EXIT_KEY):
       write(STDOUT_FILENO, "\x1b[2J", 4);
       write(STDOUT_FILENO, "\x1b[H", 3);
       exit(0);
