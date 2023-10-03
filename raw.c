@@ -14,11 +14,11 @@ void enableRawMode() {
   atexit(disableRawMode);
   struct termios rawmode = orig_termios;
 
-  // Disable software control flow inputs
-  rawmode.c_iflag &= ~(IXON);
+  // Disable software control flow inputs and fix CTRL + M
+  rawmode.c_iflag &= ~(ICRNL | IXON);
 
-  // Disable echo, canonical mode, and SIG keys like CTRL + C
-  rawmode.c_lflag &= ~(ECHO | ICANON | ISIG);
+  // Disable echo, canonical mode, CTRL + V, and SIG keys like CTRL + C
+  rawmode.c_lflag &= ~(ECHO | ICANON | IEXTEN | ISIG);
 
   tcsetattr(STDIN_FILENO, TCSAFLUSH, &rawmode);
 }
