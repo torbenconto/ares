@@ -55,7 +55,7 @@ void enableRawMode() {
   if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1) die("tcsetattr");
 }
 
-void editorOpen(char *filename) {
+void open(char *filename) {
   FILE *fp = fopen(filename, "r");
   if (!fp) die("fopen");
 
@@ -78,7 +78,7 @@ void editorOpen(char *filename) {
 }
 
 
-void editorDrawRows(struct abuf *ab) {
+void drawRows(struct abuf *ab) {
   int y;
   for (y = 0; y < C.screenrows; y++) {
     if (y >= C.numrows) {
@@ -110,13 +110,13 @@ void editorDrawRows(struct abuf *ab) {
   }
 }
 
-void editorRefreshScreen() {
+void refreshScreen() {
   struct abuf ab = ABUF_INIT;
 
   abAppend(&ab, "\x1b[?25l", 6);
   abAppend(&ab, "\x1b[H", 3);
 
-  editorDrawRows(&ab);
+  drawRows(&ab);
 
   char buf[32];
   snprintf(buf, sizeof(buf), "\x1b[%d;%dH", C.cy + 1, C.cx + 1);
@@ -129,7 +129,7 @@ void editorRefreshScreen() {
 }
 
 
-void editorMoveCursor(int key) {
+void moveCursor(int key) {
   switch (key) {
     case ARROW_LEFT:
       if (C.cx != 0) {
@@ -154,7 +154,7 @@ void editorMoveCursor(int key) {
   }
 }
 
-void editorProcessKeypress() {
+void processKeypress() {
   int c = readKey();
 
   switch (c) {
@@ -177,7 +177,7 @@ void editorProcessKeypress() {
       {
         int times = C.screenrows;
         while (times--)
-          editorMoveCursor(c == PAGE_UP ? ARROW_UP : ARROW_DOWN);
+            moveCursor(c == PAGE_UP ? ARROW_UP : ARROW_DOWN);
       }
       break;
 
@@ -185,7 +185,7 @@ void editorProcessKeypress() {
     case ARROW_DOWN:
     case ARROW_LEFT:
     case ARROW_RIGHT:
-      editorMoveCursor(c);
+      moveCursor(c);
       break;
   }
 }
@@ -202,12 +202,12 @@ int main(int argc, char *argv[]) {
   enableRawMode();
   initEditor();
   if (argc >= 2) {
-    editorOpen(argv[1]);
+    open(argv[1]);
   }
 
   while (1) {
-    editorRefreshScreen();
-    editorProcessKeypress();
+    refreshScreen();
+    processKeypress();
   }
 
   return 0;
