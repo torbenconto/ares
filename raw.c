@@ -17,6 +17,9 @@ void enableRawMode() {
   // Disable software control flow inputs and fix CTRL + M
   rawmode.c_iflag &= ~(ICRNL | IXON);
 
+  // Disable output processing
+  rawmode.c_oflag &= ~(OPOST);
+
   // Disable echo, canonical mode, CTRL + V, and SIG keys like CTRL + C
   rawmode.c_lflag &= ~(ECHO | ICANON | IEXTEN | ISIG);
 
