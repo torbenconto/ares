@@ -15,6 +15,9 @@
 #include <stdlib.h>
 
 void die(const char *e) {
+    write(STDOUT_FILENO, "\x1b[2J", 4);
+    write(STDOUT_FILENO, "\x1b[H", 3);
+    
     perror(e);
     exit(1);
 }
