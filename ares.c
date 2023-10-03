@@ -163,11 +163,15 @@ void moveCursor(int key) {
     case ARROW_LEFT:
       if (C.cx != 0) {
         C.cx--;
+      } else if (C.cy > 0) {
+        C.cx = C.row[C.cy].size;
       }
       break;
     case ARROW_RIGHT:
         if (row && C.cx < row->size) {
             C.cx++;
+        } else if (row && C.cx == row->size) {
+            C.cx = 0;
         }
       break;
     case ARROW_UP:
