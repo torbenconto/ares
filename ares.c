@@ -18,6 +18,7 @@ typedef struct erow {
 
 struct Config {
   int cx, cy;
+  int rowoff;
   int screenrows;
   int screencols;
   int numrows;
@@ -63,7 +64,7 @@ void open(char *filename) {
   size_t linecap = 0;
   ssize_t linelen;
   linelen = getline(&line, &linecap, fp);
-  if (linelen != -1) {
+  while ((linelen = getline(&line, &linecap, fp)) != -1) {
     while (linelen > 0 && (line[linelen - 1] == '\n' ||
                            line[linelen - 1] == '\r'))
       linelen--;
@@ -77,7 +78,8 @@ void open(char *filename) {
 void drawRows(struct abuf *ab) {
   int y;
   for (y = 0; y < C.screenrows; y++) {
-    if (y >= C.numrows) {
+    int filerow = y + C.rowoff;
+    if (filerow >= C.numrows) {
       if (C.numrows == 0 && y == C.screenrows / 3) {
         char welcome[80];
         int welcomelen = snprintf(welcome, sizeof(welcome),
@@ -94,9 +96,9 @@ void drawRows(struct abuf *ab) {
         abAppend(ab, SIDE_CHARACTER, 1);
       }
     } else {
-      int len = C.row->size;
+      int len = C.row[filerow].size;
       if (len > C.screencols) len = C.screencols;
-      abAppend(ab, C.row->chars, len);
+      abAppend(ab, C.row[filerow].chars, len);
     }
 
     abAppend(ab, "\x1b[K", 3);
@@ -200,6 +202,7 @@ void initEditor() {
   C.cx = 0;
   C.cy = 0;
   C.numrows = 0;
+  C.rowoff = 0;
   C.row = NULL;
 
   if (getWindowSize(&C.screenrows, &C.screencols) == -1) die("getWindowSize");
