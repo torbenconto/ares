@@ -1,9 +1,11 @@
 #ifndef raw
 #define raw
 
-struct termios orig_termios;
+#include <termios.h>
 
-void enableRawMode();
-void disableRawMode();
+extern struct termios orig_termios;
+
+void enableRawMode(void);
+void disableRawMode(void);
 
 #endif
