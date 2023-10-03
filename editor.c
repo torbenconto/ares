@@ -8,6 +8,10 @@ void clearScreen() {
     write(STDOUT_FILENO, "\x1b[2J", 4);
 }
 
+void resetCursor() {
+    write(STDOUT_FILENO, "\x1b[H", 3);
+}
+
 char readKey() {
     int nread;
     char c;

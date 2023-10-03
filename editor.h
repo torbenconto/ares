@@ -5,6 +5,6 @@ char readKey();
 void processKeypress(void);
 
 void clearScreen(void);
-
+void resetCursor(void);
 
 #endif

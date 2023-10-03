@@ -24,7 +24,7 @@ int main() {
 
     for (;;) {
         clearScreen();
-        write(STDOUT_FILENO, "\x1b[H", 3);
+        resetCursor();
 
         processKeypress();
     }
