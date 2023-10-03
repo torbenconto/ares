@@ -14,8 +14,11 @@ void enableRawMode() {
   atexit(disableRawMode);
   struct termios rawmode = orig_termios;
 
-  // Disable software control flow inputs and fix CTRL + M
-  rawmode.c_iflag &= ~(ICRNL | IXON);
+  // Disable software control flow inputs and fix CTRL + M, trim last byte of chars
+  rawmode.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON);
+
+  // Change character size to 8 bytes
+  rawmode.c_cflag |= (CS8);
 
   // Disable output processing
   rawmode.c_oflag &= ~(OPOST);
