@@ -19,6 +19,7 @@ typedef struct erow {
 struct Config {
   int cx, cy;
   int rowoff;
+  int coloff;
   int screenrows;
   int screencols;
   int numrows;
@@ -81,6 +82,12 @@ void scroll() {
     if (C.cy >= C.rowoff + C.screenrows) {
         C.rowoff = C.cy - C.screenrows + 1;
     }
+    if (C.cx < C.coloff) {
+        C.coloff = C.cx;
+    }
+    if (C.cx >= C.coloff + C.screencols) {
+        C.coloff = C.cx - C.screencols + 1;
+    }
 }
 
 
@@ -105,9 +112,10 @@ void drawRows(struct abuf *ab) {
         abAppend(ab, SIDE_CHARACTER, 1);
       }
     } else {
-      int len = C.row[filerow].size;
+      int len = C.row[filerow].size - C.coloff;
+      if (len < 0) len = 0;
       if (len > C.screencols) len = C.screencols;
-      abAppend(ab, C.row[filerow].chars, len);
+      abAppend(ab, &C.row[filerow].chars[C.coloff], len);
     }
 
     abAppend(ab, "\x1b[K", 3);
@@ -138,7 +146,8 @@ void refreshScreen() {
   drawRows(&ab);
 
   char buf[32];
-  snprintf(buf, sizeof(buf), "\x1b[%d;%dH", C.cy + 1, C.cx + 1);
+  snprintf(buf, sizeof(buf), "\x1b[%d;%dH", (C.cy - C.rowoff) + 1, C.cx + 1);
+
   abAppend(&ab, buf, strlen(buf));
 
   abAppend(&ab, "\x1b[?25h", 6);
@@ -156,9 +165,7 @@ void moveCursor(int key) {
       }
       break;
     case ARROW_RIGHT:
-      if (C.cx != C.screencols - 1) {
-        C.cx++;
-      }
+      C.cx++;
       break;
     case ARROW_UP:
       if (C.cy != 0) {
@@ -214,6 +221,7 @@ void initEditor() {
   C.cy = 0;
   C.numrows = 0;
   C.rowoff = 0;
+  C.coloff = 0;
   C.row = NULL;
 
   if (getWindowSize(&C.screenrows, &C.screencols) == -1) die("getWindowSize");
