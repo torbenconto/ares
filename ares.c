@@ -79,7 +79,10 @@ void open(char *filename) {
 }
 
 void scroll() {
-    C.rx = C.cx;
+    C.rx = 0;
+    if (C.cy < C.numrows) {
+        C.rx = rowCxToRx(&C.row[C.cy], C.cx);
+    }
 
     if (C.cy < C.rowoff) {
         C.rowoff = C.cy;
@@ -165,6 +168,17 @@ void updateRow(erow *row) {
   row->rsize = idx;
 }
 
+int rowCxToRx(erow *row, int cx) {
+  int rx = 0;
+  int j;
+  for (j = 0; j < cx; j++) {
+    if (row->chars[j] == '\t')
+      rx += (TAB_STOP - 1) - (rx % TAB_STOP);
+    rx++;
+  }
+  return rx;
+}
+
 void refreshScreen() {
   scroll();
 
@@ -177,7 +191,7 @@ void refreshScreen() {
 
   char buf[32];
   snprintf(buf, sizeof(buf), "\x1b[%d;%dH", (C.cy - C.rowoff) + 1,
-                                            (C.cx - C.coloff) + 1);
+                                            (C.rx - C.coloff) + 1);
   abAppend(&ab, buf, strlen(buf));
 
   abAppend(&ab, "\x1b[?25h", 6);
@@ -233,16 +247,23 @@ void processKeypress() {
       break;
 
     case END_KEY:
-      C.cx = C.screencols - 1;
+    if (C.cy < C.numrows)
+        C.cx = C.row[C.cy].size;
       break;
 
     case PAGE_UP:
     case PAGE_DOWN:
-      {
-        int times = C.screenrows;
-        while (times--)
+        {
+            if (c == PAGE_UP) {
+            C.cy = C.rowoff;
+            } else if (c == PAGE_DOWN) {
+            C.cy = C.rowoff + C.screenrows - 1;
+            if (C.cy > C.numrows) C.cy = C.numrows;
+            }
+            int times = C.screenrows;
+            while (times--)
             moveCursor(c == PAGE_UP ? ARROW_UP : ARROW_DOWN);
-      }
+        }
       break;
 
     case ARROW_UP:
