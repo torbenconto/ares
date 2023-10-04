@@ -1,11 +1,12 @@
-#include "includes/ares.h"
-#include "includes/keys.h"
 #include "includes/buffer.h"
+#include "includes/keys.h"
+#include "includes/ares.h"
 #include <stdarg.h>
 #include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <fcntl.h>
 #include <string.h>
 #include <sys/ioctl.h>
 #include <sys/types.h>
@@ -64,7 +65,7 @@ void enableRawMode() {
   if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1) die("tcsetattr");
 }
 
-void open(char *filename) {
+void ares_open(char *filename) {
   free(C.filename);
   C.filename = strdup(filename);
  FILE *fp = fopen(filename, "r");
@@ -83,6 +84,45 @@ void open(char *filename) {
   free(line);
   fclose(fp);
 }
+
+char *rowsToString(int *buflen) {
+  int totlen = 0;
+  int j;
+  for (j = 0; j < C.numrows; j++)
+    totlen += C.row[j].size + 1;
+  *buflen = totlen;
+  char *buf = malloc(totlen);
+  char *p = buf;
+  for (j = 0; j < C.numrows; j++) {
+    memcpy(p, C.row[j].chars, C.row[j].size);
+    p += C.row[j].size;
+    *p = '\n';
+    p++;
+  }
+  return buf;
+}
+
+void save() {
+  if (C.filename == NULL) return;
+  int len;
+  char *buf = rowsToString(&len);
+  int fd = open(C.filename, O_RDWR | O_CREAT, 0644);
+  if (fd != -1) {
+    if (ftruncate(fd, len) != -1) {
+      if (write(fd, buf, len) == len) {
+        close(fd);
+        free(buf);
+        setStatusMessage("%d bytes written to disk", len);
+        return;
+      }
+    }
+    close(fd);
+  }
+  setStatusMessage("Can't save! I/O error: %s", strerror(errno));
+  free(buf);
+}
+
+
 
 void scroll() {
     C.rx = 0;
@@ -312,6 +352,10 @@ void processKeypress() {
       C.cx = 0;
       break;
 
+    case CTRL_KEY('s'):
+      save();
+      break;
+
     case END_KEY:
     if (C.cy < C.numrows)
         C.cx = C.row[C.cy].size;
@@ -345,6 +389,9 @@ void processKeypress() {
       moveCursor(c);
       break;
 
+    case CTRL_KEY('l'):
+    case '\x1b':
+      break;
     default:
       insertChar(c);
       break;
@@ -371,7 +418,7 @@ int main(int argc, char *argv[]) {
   enableRawMode();
   initEditor();
   if (argc >= 2) {
-    open(argv[1]);
+    ares_open(argv[1]);
   }
 
   setStatusMessage("HELP: Ctrl-Q = quit");
