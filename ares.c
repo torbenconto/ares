@@ -257,6 +257,23 @@ void rowInsertCharAt(erow *row, int at, int c) {
   C.dirty++;
 }
 
+void rowDelCharAt(erow *row, int at) {
+  if (at < 0 || at >= row->size) return;
+  memmove(&row->chars[at], &row->chars[at + 1], row->size - at);
+  row->size--;
+  updateRow(row);
+  C.dirty++;
+}
+
+void delChar() {
+  if (C.cy == C.numrows) return;
+  erow *row = &C.row[C.cy];
+  if (C.cx > 0) {
+    rowDelCharAt(row, C.cx - 1);
+    C.cx--;
+  }
+}
+
 void insertChar(int c) {
   if (C.cy == C.numrows) {
     appendRow("", 0);
@@ -370,7 +387,8 @@ void processKeypress() {
     case BACKSPACE:
     case CTRL_KEY('h'):
     case DEL_KEY:
-      /* TODO */
+      if (c == DEL_KEY) moveCursor(ARROW_RIGHT);
+      delChar();
       break;
 
     case PAGE_UP:
