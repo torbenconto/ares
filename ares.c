@@ -20,6 +20,7 @@ typedef struct erow {
 
 struct Config {
   int cx, cy;
+  int rx;
   int rowoff;
   int coloff;
   int screenrows;
@@ -78,17 +79,19 @@ void open(char *filename) {
 }
 
 void scroll() {
+    C.rx = C.cx;
+
     if (C.cy < C.rowoff) {
         C.rowoff = C.cy;
     }
     if (C.cy >= C.rowoff + C.screenrows) {
         C.rowoff = C.cy - C.screenrows + 1;
     }
-    if (C.cx < C.coloff) {
-        C.coloff = C.cx;
+    if (C.rx < C.coloff) {
+        C.coloff = C.rx;
     }
-    if (C.cx >= C.coloff + C.screencols) {
-        C.coloff = C.cx - C.screencols + 1;
+    if (C.rx >= C.coloff + C.screencols) {
+        C.coloff = C.rx - C.screencols + 1;
     }
 }
 
@@ -114,11 +117,11 @@ void drawRows(struct abuf *ab) {
         abAppend(ab, SIDE_CHARACTER, 1);
       }
     } else {
-      int len = C.row[filerow].size - C.coloff;
+      int len = C.row[filerow].rsize - C.coloff;
       if (len < 0) len = 0;
       if (len > C.screencols) len = C.screencols;
-      abAppend(ab, &C.row[filerow].chars[C.coloff], len);
-    }
+        abAppend(ab, &C.row[filerow].render[C.coloff], len);
+      }
 
     abAppend(ab, "\x1b[K", 3);
     if (y < C.screenrows - 1) {
@@ -137,18 +140,26 @@ void appendRow(char *s, size_t len) {
 
   C.row[at].rsize = 0;
   C.row[at].render = NULL;
-  editorUpdateRow(&C.row[at]);
+  updateRow(&C.row[at]);
 
   C.numrows++;
 }
 
 void updateRow(erow *row) {
-  free(row->render);
-  row->render = malloc(row->size + 1);
+  int tabs = 0;
   int j;
+  for (j = 0; j < row->size; j++)
+    if (row->chars[j] == '\t') tabs++;
+  free(row->render);
+  row->render = malloc(row->size + tabs*(TAB_STOP - 1) + 1);
   int idx = 0;
   for (j = 0; j < row->size; j++) {
-    row->render[idx++] = row->chars[j];
+    if (row->chars[j] == '\t') {
+      row->render[idx++] = ' ';
+      while (idx % TAB_STOP != 0) row->render[idx++] = ' ';
+    } else {
+      row->render[idx++] = row->chars[j];
+    }
   }
   row->render[idx] = '\0';
   row->rsize = idx;
@@ -250,6 +261,7 @@ void processKeypress() {
 void initEditor() {
   C.cx = 0;
   C.cy = 0;
+  C.rx = 0;
   C.numrows = 0;
   C.rowoff = 0;
   C.coloff = 0;
