@@ -1,6 +1,7 @@
 #include "includes/ares.h"
 #include "includes/keys.h"
 #include "includes/buffer.h"
+#include <stdarg.h>
 #include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
@@ -25,6 +26,9 @@ struct Config {
   int coloff;
   int screenrows;
   int screencols;
+  char *filename;
+  char statusmsg[80];
+  time_t statusmsg_time;
   int numrows;
   erow *row;
   struct termios orig_termios;
@@ -61,6 +65,8 @@ void enableRawMode() {
 }
 
 void open(char *filename) {
+  free(C.filename);
+  C.filename = strdup(filename);
  FILE *fp = fopen(filename, "r");
   if (!fp) die("fopen");
 
@@ -98,6 +104,35 @@ void scroll() {
     }
 }
 
+void drawStatusBar(struct abuf *ab) {
+  abAppend(ab, "\x1b[7m", 4);
+  char status[80], rstatus[80];
+  int len = snprintf(status, sizeof(status), "%.20s - %d lines",
+    C.filename ? C.filename : "[No Name]", C.numrows);
+  int rlen = snprintf(rstatus, sizeof(rstatus), "%d/%d",
+    C.cy + 1, C.numrows);
+  if (len > C.screencols) len = C.screencols;
+  abAppend(ab, status, len);
+  while (len < C.screencols) {
+    if (C.screencols - len == rlen) {
+      abAppend(ab, rstatus, rlen);
+      break;
+    } else {
+      abAppend(ab, " ", 1);
+      len++;
+    }
+  }
+  abAppend(ab, "\x1b[m", 3);
+  abAppend(ab, "\r\n", 2);
+}
+
+void drawMessageBar(struct abuf *ab) {
+  abAppend(ab, "\x1b[K", 3);
+  int msglen = strlen(C.statusmsg);
+  if (msglen > C.screencols) msglen = C.screencols;
+  if (msglen && time(NULL) - C.statusmsg_time < 5)
+    abAppend(ab, C.statusmsg, msglen);
+}
 
 void drawRows(struct abuf *ab) {
   int y;
@@ -127,9 +162,8 @@ void drawRows(struct abuf *ab) {
       }
 
     abAppend(ab, "\x1b[K", 3);
-    if (y < C.screenrows - 1) {
-      abAppend(ab, "\r\n", 2);
-    }
+    abAppend(ab, "\r\n", 2);
+    
   }
 }
 
@@ -188,6 +222,8 @@ void refreshScreen() {
   abAppend(&ab, "\x1b[H", 3);
 
   drawRows(&ab);
+  drawStatusBar(&ab);
+  drawMessageBar(&ab);
 
   char buf[32];
   snprintf(buf, sizeof(buf), "\x1b[%d;%dH", (C.cy - C.rowoff) + 1,
@@ -203,6 +239,7 @@ void refreshScreen() {
 
 void moveCursor(int key) {
   erow *row = (C.cy >= C.numrows) ? NULL : &C.row[C.cy];
+
   switch (key) {
     case ARROW_LEFT:
       if (C.cx != 0) {
@@ -210,9 +247,9 @@ void moveCursor(int key) {
       }
       break;
     case ARROW_RIGHT:
-        if (row && C.cx < row->size) {
-            C.cx++;
-        }
+      if (row && C.cx < row->size) {
+        C.cx++;
+      }
       break;
     case ARROW_UP:
       if (C.cy != 0) {
@@ -225,11 +262,20 @@ void moveCursor(int key) {
       }
       break;
   }
+
   row = (C.cy >= C.numrows) ? NULL : &C.row[C.cy];
   int rowlen = row ? row->size : 0;
   if (C.cx > rowlen) {
     C.cx = rowlen;
   }
+}
+
+void setStatusMessage(const char *fmt, ...) {
+  va_list ap;
+  va_start(ap, fmt);
+  vsnprintf(C.statusmsg, sizeof(C.statusmsg), fmt, ap);
+  va_end(ap);
+  C.statusmsg_time = time(NULL);
 }
 
 void processKeypress() {
@@ -283,8 +329,12 @@ void initEditor() {
   C.rowoff = 0;
   C.coloff = 0;
   C.row = NULL;
+  C.filename = NULL;
+  C.statusmsg[0] = '\0';
+  C.statusmsg_time = 0;
 
   if (getWindowSize(&C.screenrows, &C.screencols) == -1) die("getWindowSize");
+  C.screenrows -= 2;
 }
 
 int main(int argc, char *argv[]) {
@@ -293,6 +343,8 @@ int main(int argc, char *argv[]) {
   if (argc >= 2) {
     open(argv[1]);
   }
+
+  setStatusMessage("HELP: Ctrl-Q = quit");
 
   while (1) {
     refreshScreen();
