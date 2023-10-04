@@ -80,7 +80,7 @@ void ares_open(char *filename) {
     while (linelen > 0 && (line[linelen - 1] == '\n' ||
                            line[linelen - 1] == '\r'))
       linelen--;
-    appendRow(line, linelen);
+    insertRowAt(C.numrows, line, linelen);
   }
   free(line);
   fclose(fp);
@@ -211,10 +211,11 @@ void drawRows(struct abuf *ab) {
   }
 }
 
-void appendRow(char *s, size_t len) {
+void insertRowAt(int at, char *s, size_t len) {
+if (at < 0 || at > C.numrows) return;
   C.row = realloc(C.row, sizeof(erow) * (C.numrows + 1));
-  int at = C.numrows;
-  C.row[at].size = len;
+  memmove(&C.row[at + 1], &C.row[at], sizeof(erow) * (C.numrows - at));  C.row[at].size = len;
+
   C.row[at].chars = malloc(len + 1);
   memcpy(C.row[at].chars, s, len);
   C.row[at].chars[len] = '\0';
@@ -247,6 +248,28 @@ void updateRow(erow *row) {
   row->rsize = idx;
 }
 
+void freeRow(erow *row) {
+  free(row->render);
+  free(row->chars);
+}
+void delRowAt(int at) {
+  if (at < 0 || at >= C.numrows) return;
+  freeRow(&C.row[at]);
+  memmove(&C.row[at], &C.row[at + 1], sizeof(erow) * (C.numrows - at - 1));
+  C.numrows--;
+  C.dirty++;
+}
+
+void rowAppendString(erow *row, char *s, size_t len) {
+  row->chars = realloc(row->chars, row->size + len + 1);
+  memcpy(&row->chars[row->size], s, len);
+  row->size += len;
+  row->chars[row->size] = '\0';
+  updateRow(row);
+  C.dirty++;
+}
+
+
 void rowInsertCharAt(erow *row, int at, int c) {
   if (at < 0 || at > row->size) at = row->size;
   row->chars = realloc(row->chars, row->size + 2);
@@ -267,19 +290,40 @@ void rowDelCharAt(erow *row, int at) {
 
 void delChar() {
   if (C.cy == C.numrows) return;
+  if (C.cx == 0 && C.cy == 0) return;
   erow *row = &C.row[C.cy];
   if (C.cx > 0) {
     rowDelCharAt(row, C.cx - 1);
     C.cx--;
+  } else {
+    C.cx = C.row[C.cy - 1].size;
+    rowAppendString(&C.row[C.cy - 1], row->chars, row->size);
+    delRowAt(C.cy);
+    C.cy--;
   }
 }
 
 void insertChar(int c) {
   if (C.cy == C.numrows) {
-    appendRow("", 0);
+    insertRowAt(C.numrows, "", 0);
   }
   rowInsertCharAt(&C.row[C.cy], C.cx, c);
   C.cx++;
+}
+
+void insertNewline() {
+  if (C.cx == 0) {
+    insertRowAt(C.cy, "", 0);
+  } else {
+    erow *row = &C.row[C.cy];
+    insertRowAt(C.cy + 1, &row->chars[C.cx], row->size - C.cx);
+    row = &C.row[C.cy];
+    row->size = C.cx;
+    row->chars[row->size] = '\0';
+    updateRow(row);
+  }
+  C.cy++;
+  C.cx = 0;
 }
 
 int rowCxToRx(erow *row, int cx) {
@@ -363,7 +407,7 @@ void processKeypress() {
 
   switch (c) {
     case '\r':
-      /* TODO */
+      insertNewline();
       break;
     case CTRL_KEY(EXIT_KEY):
       write(STDOUT_FILENO, "\x1b[2J", 4);
