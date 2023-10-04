@@ -208,7 +208,15 @@ void rowInsertCharAt(erow *row, int at, int c) {
   memmove(&row->chars[at + 1], &row->chars[at], row->size - at + 1);
   row->size++;
   row->chars[at] = c;
-  editorUpdateRow(row);
+  updateRow(row);
+}
+
+void insertChar(int c) {
+  if (C.cy == C.numrows) {
+    appendRow("", 0);
+  }
+  rowInsertCharAt(&C.row[C.cy], C.cx, c);
+  C.cx++;
 }
 
 int rowCxToRx(erow *row, int cx) {
@@ -291,6 +299,9 @@ void processKeypress() {
   int c = readKey();
 
   switch (c) {
+    case '\r':
+      /* TODO */
+      break;
     case CTRL_KEY(EXIT_KEY):
       write(STDOUT_FILENO, "\x1b[2J", 4);
       write(STDOUT_FILENO, "\x1b[H", 3);
@@ -304,6 +315,12 @@ void processKeypress() {
     case END_KEY:
     if (C.cy < C.numrows)
         C.cx = C.row[C.cy].size;
+      break;
+
+    case BACKSPACE:
+    case CTRL_KEY('h'):
+    case DEL_KEY:
+      /* TODO */
       break;
 
     case PAGE_UP:
@@ -326,6 +343,10 @@ void processKeypress() {
     case ARROW_LEFT:
     case ARROW_RIGHT:
       moveCursor(c);
+      break;
+
+    default:
+      insertChar(c);
       break;
   }
 }
