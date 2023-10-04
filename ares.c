@@ -202,6 +202,15 @@ void updateRow(erow *row) {
   row->rsize = idx;
 }
 
+void rowInsertCharAt(erow *row, int at, int c) {
+  if (at < 0 || at > row->size) at = row->size;
+  row->chars = realloc(row->chars, row->size + 2);
+  memmove(&row->chars[at + 1], &row->chars[at], row->size - at + 1);
+  row->size++;
+  row->chars[at] = c;
+  editorUpdateRow(row);
+}
+
 int rowCxToRx(erow *row, int cx) {
   int rx = 0;
   int j;
