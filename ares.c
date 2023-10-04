@@ -23,6 +23,7 @@ typedef struct erow {
 struct Config {
   int cx, cy;
   int rx;
+  int dirty;
   int rowoff;
   int coloff;
   int screenrows;
@@ -83,6 +84,7 @@ void ares_open(char *filename) {
   }
   free(line);
   fclose(fp);
+  C.dirty = 0;
 }
 
 char *rowsToString(int *buflen) {
@@ -112,6 +114,7 @@ void save() {
       if (write(fd, buf, len) == len) {
         close(fd);
         free(buf);
+        C.dirty = 0;
         setStatusMessage("%d bytes written to disk", len);
         return;
       }
@@ -147,8 +150,9 @@ void scroll() {
 void drawStatusBar(struct abuf *ab) {
   abAppend(ab, "\x1b[7m", 4);
   char status[80], rstatus[80];
-  int len = snprintf(status, sizeof(status), "%.20s - %d lines",
-    C.filename ? C.filename : "[No Name]", C.numrows);
+  int len = snprintf(status, sizeof(status), "%.20s - %d lines %s",
+    C.filename ? C.filename : "[No Name]", C.numrows,
+    C.dirty ? "(modified)" : "");
   int rlen = snprintf(rstatus, sizeof(rstatus), "%d/%d",
     C.cy + 1, C.numrows);
   if (len > C.screencols) len = C.screencols;
@@ -220,6 +224,7 @@ void appendRow(char *s, size_t len) {
   updateRow(&C.row[at]);
 
   C.numrows++;
+  C.dirty++;
 }
 
 void updateRow(erow *row) {
@@ -249,6 +254,7 @@ void rowInsertCharAt(erow *row, int at, int c) {
   row->size++;
   row->chars[at] = c;
   updateRow(row);
+  C.dirty++;
 }
 
 void insertChar(int c) {
@@ -421,7 +427,7 @@ int main(int argc, char *argv[]) {
     ares_open(argv[1]);
   }
 
-  setStatusMessage("HELP: Ctrl-Q = quit");
+  setStatusMessage("HELP: Ctrl-S = save | Ctrl-Q = quit");
 
   while (1) {
     refreshScreen();
