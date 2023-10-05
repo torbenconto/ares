@@ -1,5 +1,29 @@
-#include "ares.h"
+/*
+ * Copyright (c) 2023 Torben Conto
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
 
+/*
+* TODO: 256 bit ANSI color code support, undo and redo, multiline comment highlighting
+*/
+#include "ares.h"
 #include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -31,12 +55,16 @@ enum Highlight {
   HL_NUMBER,
   HL_MATCH,
   HL_STRING,
+  HL_KEYWORD_PRIMARY,
+  HL_KEYWORD_SECONDARY,
   HL_COMMENT
 };
 
 struct Syntax {
   char *filetype;
   char **filematch;
+  char **keywords;
+  char *singleline_comment_start;
   int flags;
 };
 
@@ -68,11 +96,19 @@ struct State {
 struct State S;
 
 char *C_HL_extensions[] = { ".c", ".h", ".cpp", NULL };
+char *C_HL_keywords[] = {
+  "switch", "if", "while", "for", "break", "continue", "return", "else",
+  "struct", "union", "typedef", "static", "enum", "class", "case",
+  "int|", "long|", "double|", "float|", "char|", "unsigned|", "signed|",
+  "void|", NULL
+};
 
 struct Syntax HLDB[] = {
   {
     "c",
     C_HL_extensions,
+    C_HL_keywords,
+    "//",
     HL_HIGHLIGHT_NUMBERS | HL_HIGHLIGHT_STRINGS
   },
 };
@@ -196,13 +232,28 @@ int is_separator(int c) {
 void updateSyntax(erow *row) {
     row->hl = realloc(row->hl, row->rsize);
   memset(row->hl, HL_NORMAL, row->rsize);
+  
   if (S.syntax == NULL) return;
+
+  char **keywords = S.syntax->keywords;
+
+  char *scs = S.syntax->singleline_comment_start;
+  int scs_len = scs ? strlen(scs) : 0;
+
   int prev_sep = 1;
   int in_string = 0;
   int i = 0;
   while (i < row->rsize) {
     char c = row->render[i];
     unsigned char prev_hl = (i > 0) ? row->hl[i - 1] : HL_NORMAL;
+
+    if (scs_len && !in_string) {
+      if (!strncmp(&row->render[i], scs, scs_len)) {
+        memset(&row->hl[i], HL_COMMENT, row->rsize - i);
+        break;
+      }
+    }
+
     if (S.syntax->flags & HL_HIGHLIGHT_STRINGS) {
       if (in_string) {
         row->hl[i] = HL_STRING;
@@ -233,6 +284,25 @@ void updateSyntax(erow *row) {
         continue;
       }
     }
+
+    if (prev_sep) {
+      int j;
+      for (j = 0; keywords[j]; j++) {
+        int klen = strlen(keywords[j]);
+        int kw2 = keywords[j][klen - 1] == '|';
+        if (kw2) klen--;
+        if (!strncmp(&row->render[i], keywords[j], klen) &&
+            is_separator(row->render[i + klen])) {
+          memset(&row->hl[i], kw2 ? HL_KEYWORD_SECONDARY : HL_KEYWORD_PRIMARY, klen);
+          i += klen;
+          break;
+        }
+      }
+      if (keywords[j] != NULL) {
+        prev_sep = 0;
+        continue;
+      }
+    }
     prev_sep = is_separator(c);
     i++;
   }
@@ -244,6 +314,8 @@ int syntaxToColor(int hl) {
     case HL_NUMBER: return NUMBER_HIGHLIGHT_COLOR;
     case HL_COMMENT: return COMMENT_HIGHLIGHT_COLOR;
     case HL_MATCH: return SEARCH_MATCH_HIGHLIGHT_COLOR;
+    case HL_KEYWORD_PRIMARY: return KEYWORD_PRIMARY_HIGHLIGHT_COLOR;
+    case HL_KEYWORD_SECONDARY: return KEYWORD_SECONDARY_HIGHLIGHT_COLOR;
     default: return DEFAULT_HIGHLIGHT_COLOR;
   }
 }
@@ -635,7 +707,17 @@ void drawRows(struct abuf *ab) {
       int current_color = -1;
       int j;
       for (j = 0; j < len; j++) {
-        if (hl[j] == HL_NORMAL) {
+        if (iscntrl(c[j])) {
+          char sym = (c[j] <= 26) ? '@' + c[j] : '?';
+          abAppend(ab, "\x1b[7m", 4);
+          abAppend(ab, &sym, 1);
+          abAppend(ab, "\x1b[m", 3);
+          if (current_color != -1) {
+            char buf[16];
+            int clen = snprintf(buf, sizeof(buf), "\x1b[%dm", current_color);
+            abAppend(ab, buf, clen);
+          }
+        } else if (hl[j] == HL_NORMAL) {
           if (current_color != -1) {
             abAppend(ab, "\x1b[39m", 5);
             current_color = -1;
