@@ -18,6 +18,5 @@ struct positions {
 void die(const char *e);
 void setStatusMessage(const char *fmt, ...);
 void refreshScreen();
-char *ares_prompt(char *prompt);
-
+char *ares_prompt(char *prompt, void (*callback)(char *, int));
 #endif

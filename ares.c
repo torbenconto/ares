@@ -171,6 +171,20 @@ int rowCxToRx(erow *row, int cx) {
   return rx;
 }
 
+int rowRxToCx(erow *row, int rx) {
+  int cur_rx = 0;
+  int cx;
+  for (cx = 0; cx < row->size; cx++) {
+    if (row->chars[cx] == '\t')
+      cur_rx += (TAB_STOP - 1) - (cur_rx % TAB_STOP);
+    cur_rx++;
+
+    if (cur_rx > rx) return cx;
+  }
+  return cx;
+}
+
+
 void updateRow(erow *row) {
   int tabs = 0;
   int j;
@@ -333,7 +347,7 @@ void ares_open(char *filename) {
 
 void save() {
   if (S.filename == NULL) {
-    S.filename = ares_prompt("Save as: %s (ESC to cancel)");
+    S.filename = ares_prompt("Save as: %s (ESC to cancel)", NULL);
     if (S.filename == NULL) {
       setStatusMessage("Save aborted");
       return;
@@ -361,21 +375,29 @@ void save() {
   setStatusMessage("Can't save! I/O error: %s", strerror(errno));
 }
 
-void ares_find() {
-  char *query = ares_prompt("Search: %s (ESC to cancel)");
-  if (query == NULL) return;
+void ares_find_cb(char *query, int key) {
+  if (key == '\r' || key == '\x1b') {
+    return;
+  }
+
   int i;
   for (i = 0; i < S.numrows; i++) {
     erow *row = &S.row[i];
     char *match = strstr(row->render, query);
     if (match) {
       S.cy = i;
-      S.cx = match - row->render;
+      S.cx = rowRxToCx(row, match - row->render);
       S.rowoff = S.numrows;
       break;
     }
   }
-  free(query);
+}
+
+void ares_find() {
+  char *query = ares_prompt("Search: %s (ESC to cancel)", ares_find_cb);
+  if (query) {
+    free(query);
+  }
 }
 
 struct abuf {
@@ -512,7 +534,7 @@ void setStatusMessage(const char *fmt, ...) {
   S.statusmsg_time = time(NULL);
 }
 
-char *ares_prompt(char *prompt) {
+char *ares_prompt(char *prompt, void (*callback)(char *, int)) {
   size_t bufsize = 128;
   char *buf = malloc(bufsize);
 
@@ -528,11 +550,13 @@ char *ares_prompt(char *prompt) {
       if (buflen != 0) buf[--buflen] = '\0';
     } else if (c == '\x1b') {
       setStatusMessage("");
+      if (callback) callback(buf, c);
       free(buf);
       return NULL;
     } else if (c == '\r') {
       if (buflen != 0) {
         setStatusMessage("");
+        if (callback) callback(buf, c);
         return buf;
       }
     } else if (!iscntrl(c) && c < 128) {
@@ -543,6 +567,7 @@ char *ares_prompt(char *prompt) {
       buf[buflen++] = c;
       buf[buflen] = '\0';
     }
+    if (callback) callback(buf, c);
   }
 }
 
