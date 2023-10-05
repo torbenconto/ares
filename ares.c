@@ -696,6 +696,26 @@ void ares_commit() {
   }
 }
 
+void ares_goto_cb(char* query, int key) {
+  if (key == '\r' || key == '\x1b') {
+    int target = atoi(query) - 1;
+    if (target <= S.numrows && target >= 0) {
+      S.cy = target;
+    } else {
+      setStatusMessage("You cant do that :(");
+    }
+    return;
+  }
+}
+
+void ares_goto() {
+  char *query = ares_prompt("Goto Line: %s", ares_goto_cb);
+
+  if (query) {
+    free(query);
+  }
+}
+
 void ares_find_cb(char *query, int key) {
   static int last_match = -1;
   static int direction = 1;
@@ -1026,6 +1046,10 @@ void processKeypress() {
       ares_save();
       break;
 
+    case CTRL_KEY('l'):
+      ares_goto();
+      break;
+
     case HOME_KEY:
       S.cx = 0;
       break;
@@ -1069,10 +1093,6 @@ void processKeypress() {
       for (int i = 0; i < TAB_WIDTH; i++) {
         insertChar(32);
       }
-      break;
-
-    case CTRL_KEY('l'):
-    case '\x1b':
       break;
 
     default:
