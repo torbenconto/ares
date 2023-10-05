@@ -1089,6 +1089,26 @@ void processKeypress() {
       moveCursor(c);
       break;
 
+    case '(':
+      insertChar('(');
+      insertChar(')');
+      break;
+
+    case '\"':
+      insertChar('\"');
+      insertChar('\"');
+      break;
+
+    case '\'':
+      insertChar('\'');
+      insertChar('\'');
+      break;
+
+    case '{':
+      insertChar('{');
+      insertChar('}');
+      break;
+
     case '\t':
       for (int i = 0; i < TAB_WIDTH; i++) {
         insertChar(32);
