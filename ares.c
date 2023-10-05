@@ -1,4 +1,5 @@
 #include "ares.h"
+
 #include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -12,7 +13,7 @@
 #include <time.h>
 #include <unistd.h>
 
-enum Keys {
+enum Key {
   BACKSPACE = 127,
   ARROW_LEFT = 1000,
   ARROW_RIGHT,
@@ -31,12 +32,18 @@ enum Highlight {
   HL_MATCH
 };
 
+struct Syntax {
+  char *filetype;
+  char **filematch;
+  int flags;
+};
+
 typedef struct erow {
   int size;
   int rsize;
-  unsigned char *hl;
   char *chars;
   char *render;
+  unsigned char *hl;
 } erow;
 
 struct State {
@@ -52,10 +59,23 @@ struct State {
   char *filename;
   char statusmsg[80];
   time_t statusmsg_time;
+  struct Syntax *syntax;
   struct termios orig_termios;
 };
 
 struct State S;
+
+char *C_HL_extensions[] = { ".c", ".h", ".cpp", NULL };
+
+struct Syntax HLDB[] = {
+  {
+    "c",
+    C_HL_extensions,
+    HL_HIGHLIGHT_NUMBERS
+  },
+};
+
+#define HLDB_ENTRIES (sizeof(HLDB) / sizeof(HLDB[0]))
 
 void die(const char *s) {
   write(STDOUT_FILENO, "\x1b[2J", 4);
@@ -63,10 +83,6 @@ void die(const char *s) {
 
   perror(s);
   exit(1);
-}
-
-int is_separator(int c) {
-  return isspace(c) || c == '\0' || strchr(",.()+-/*=~%<>[];", c) != NULL;
 }
 
 void disableRawMode() {
@@ -171,12 +187,79 @@ int getWindowSize(int *rows, int *cols) {
   }
 }
 
+int is_separator(int c) {
+  return isspace(c) || c == '\0' || strchr(",.()+-/*=~%<>[];", c) != NULL;
+}
+
+void updateSyntax(erow *row) {
+  row->hl = realloc(row->hl, row->rsize);
+  memset(row->hl, HL_NORMAL, row->rsize);
+
+  if (S.syntax == NULL) return;
+
+  int prev_sep = 1;
+
+  int i = 0;
+  while (i < row->rsize) {
+    char c = row->render[i];
+    unsigned char prev_hl = (i > 0) ? row->hl[i - 1] : HL_NORMAL;
+
+    if (S.syntax->flags & HL_HIGHLIGHT_NUMBERS) {
+      if ((isdigit(c) && (prev_sep || prev_hl == HL_NUMBER)) ||
+          (c == '.' && prev_hl == HL_NUMBER)) {
+        row->hl[i] = HL_NUMBER;
+        i++;
+        prev_sep = 0;
+        continue;
+      }
+    }
+
+    prev_sep = is_separator(c);
+    i++;
+  }
+}
+
+int syntaxToColor(int hl) {
+  switch (hl) {
+    case HL_NUMBER: return 31;
+    case HL_MATCH: return 34;
+    default: return 37;
+  }
+}
+
+void selectSyntaxHighlight() {
+  S.syntax = NULL;
+  if (S.filename == NULL) return;
+
+  for (unsigned int j = 0; j < HLDB_ENTRIES; j++) {
+    struct Syntax *s = &HLDB[j];
+    unsigned int i = 0;
+    while (s->filematch[i]) {
+      char *p = strstr(S.filename, s->filematch[i]);
+      if (p != NULL) {
+        int patlen = strlen(s->filematch[i]);
+        if (s->filematch[i][0] != '.' || p[patlen] == '\0') {
+          S.syntax = s;
+
+          int filerow;
+          for (filerow = 0; filerow < S.numrows; filerow++) {
+            updateSyntax(&S.row[filerow]);
+          }
+
+          return;
+        }
+      }
+      i++;
+    }
+  }
+}
+
 int rowCxToRx(erow *row, int cx) {
   int rx = 0;
   int j;
   for (j = 0; j < cx; j++) {
     if (row->chars[j] == '\t')
-      rx += (TAB_STOP - 1) - (rx %  TAB_STOP);
+      rx += (TAB_STOP - 1) - (rx % TAB_STOP);
     rx++;
   }
   return rx;
@@ -194,7 +277,6 @@ int rowRxToCx(erow *row, int rx) {
   }
   return cx;
 }
-
 
 void updateRow(erow *row) {
   int tabs = 0;
@@ -343,6 +425,8 @@ void ares_open(char *filename) {
   free(S.filename);
   S.filename = strdup(filename);
 
+  selectSyntaxHighlight();
+
   FILE *fp = fopen(filename, "r");
   if (!fp) die("fopen");
 
@@ -360,13 +444,14 @@ void ares_open(char *filename) {
   S.dirty = 0;
 }
 
-void save() {
+void ares_save() {
   if (S.filename == NULL) {
     S.filename = ares_prompt("Save as: %s (ESC to cancel)", NULL);
     if (S.filename == NULL) {
       setStatusMessage("Save aborted");
       return;
     }
+    selectSyntaxHighlight();
   }
 
   int len;
@@ -391,15 +476,18 @@ void save() {
 }
 
 void ares_find_cb(char *query, int key) {
+  static int last_match = -1;
+  static int direction = 1;
+
   static int saved_hl_line;
   static char *saved_hl = NULL;
+
   if (saved_hl) {
     memcpy(S.row[saved_hl_line].hl, saved_hl, S.row[saved_hl_line].rsize);
     free(saved_hl);
     saved_hl = NULL;
   }
-  static int last_match = -1;
-  static int direction = 1;
+
   if (key == '\r' || key == '\x1b') {
     last_match = -1;
     direction = 1;
@@ -412,6 +500,7 @@ void ares_find_cb(char *query, int key) {
     last_match = -1;
     direction = 1;
   }
+
   if (last_match == -1) direction = 1;
   int current = last_match;
   int i;
@@ -419,6 +508,7 @@ void ares_find_cb(char *query, int key) {
     current += direction;
     if (current == -1) current = S.numrows - 1;
     else if (current == S.numrows) current = 0;
+
     erow *row = &S.row[current];
     char *match = strstr(row->render, query);
     if (match) {
@@ -441,7 +531,10 @@ void ares_find() {
   int saved_cy = S.cy;
   int saved_coloff = S.coloff;
   int saved_rowoff = S.rowoff;
-  char *query = ares_prompt("Search: %s (ESC to cancel)", ares_find_cb);
+
+  char *query = ares_prompt("Search: %s (Use ESC/Arrows/Enter)",
+                            ares_find_cb);
+
   if (query) {
     free(query);
   } else {
@@ -493,7 +586,7 @@ void scroll() {
 }
 
 void drawRows(struct abuf *ab) {
-    int y;
+  int y;
   for (y = 0; y < S.screenrows; y++) {
     int filerow = y + S.rowoff;
     if (filerow >= S.numrows) {
@@ -529,14 +622,18 @@ void drawRows(struct abuf *ab) {
           abAppend(ab, &c[j], 1);
         } else {
           int color = syntaxToColor(hl[j]);
-          char buf[16];
-          int clen = snprintf(buf, sizeof(buf), "\x1b[%dm", color);
-          abAppend(ab, buf, clen);
+          if (color != current_color) {
+            current_color = color;
+            char buf[16];
+            int clen = snprintf(buf, sizeof(buf), "\x1b[%dm", color);
+            abAppend(ab, buf, clen);
+          }
           abAppend(ab, &c[j], 1);
         }
       }
       abAppend(ab, "\x1b[39m", 5);
     }
+
     abAppend(ab, "\x1b[K", 3);
     abAppend(ab, "\r\n", 2);
   }
@@ -548,8 +645,8 @@ void drawStatusBar(struct abuf *ab) {
   int len = snprintf(status, sizeof(status), "%.20s - %d lines %s",
     S.filename ? S.filename : "[No Name]", S.numrows,
     S.dirty ? "(modified)" : "");
-  int rlen = snprintf(rstatus, sizeof(rstatus), "%d/%d",
-    S.cy + 1, S.numrows);
+  int rlen = snprintf(rstatus, sizeof(rstatus), "%s | %d/%d",
+    S.syntax ? S.syntax->filetype : "no ft", S.cy + 1, S.numrows);
   if (len > S.screencols) len = S.screencols;
   abAppend(ab, status, len);
   while (len < S.screencols) {
@@ -637,6 +734,7 @@ char *ares_prompt(char *prompt, void (*callback)(char *, int)) {
       buf[buflen++] = c;
       buf[buflen] = '\0';
     }
+
     if (callback) callback(buf, c);
   }
 }
@@ -686,7 +784,6 @@ void processKeypress() {
 
     case CTRL_KEY(EXIT_KEY):
       if (S.dirty && quit_times > 0) {
-        // TODO: use EXIT_KEY in prompt
         setStatusMessage("File has unsaved changes. "
           "Press Ctrl-Q %d more times to quit.", quit_times);
         quit_times--;
@@ -698,7 +795,7 @@ void processKeypress() {
       break;
 
     case CTRL_KEY('s'):
-      save();
+      ares_save();
       break;
 
     case HOME_KEY:
@@ -710,15 +807,15 @@ void processKeypress() {
         S.cx = S.row[S.cy].size;
       break;
 
+    case CTRL_KEY('f'):
+      ares_find();
+      break;
+
     case BACKSPACE:
     case CTRL_KEY('h'):
     case DEL_KEY:
       if (c == DEL_KEY) moveCursor(ARROW_RIGHT);
       delChar();
-      break;
-
-    case CTRL_KEY('f'):
-      ares_find();
       break;
 
     case PAGE_UP:
@@ -756,34 +853,6 @@ void processKeypress() {
   quit_times = QUIT_TIMES;
 }
 
-void updateSyntax(erow *row) {
-  row->hl = realloc(row->hl, row->rsize);
-  memset(row->hl, HL_NORMAL, row->rsize);
-  int prev_sep = 1;
-  int i = 0;
-  while (i < row->rsize) {
-    char c = row->render[i];
-    unsigned char prev_hl = (i > 0) ? row->hl[i - 1] : HL_NORMAL;
-    if ((isdigit(c) && (prev_sep || prev_hl == HL_NUMBER)) ||
-        (c == '.' && prev_hl == HL_NUMBER)) {
-      row->hl[i] = HL_NUMBER;
-      i++;
-      prev_sep = 0;
-      continue;
-    }
-    prev_sep = is_separator(c);
-    i++;
-  }
-}
-
-int syntaxToColor(int hl) {
-  switch (hl) {
-    case HL_NUMBER: return 31;
-    case HL_MATCH: return 34;
-    default: return 37;
-  }
-}
-
 void initEditor() {
   S.cx = 0;
   S.cy = 0;
@@ -796,6 +865,7 @@ void initEditor() {
   S.filename = NULL;
   S.statusmsg[0] = '\0';
   S.statusmsg_time = 0;
+  S.syntax = NULL;
 
   if (getWindowSize(&S.screenrows, &S.screencols) == -1) die("getWindowSize");
   S.screenrows -= 2;
@@ -808,7 +878,8 @@ int main(int argc, char *argv[]) {
     ares_open(argv[1]);
   }
 
-  setStatusMessage("HELP: Ctrl-S = save | Ctrl-Q = quit");
+  setStatusMessage(
+    "HELP: Ctrl-S = save | Ctrl-Q = quit | Ctrl-F = find");
 
   while (1) {
     refreshScreen();

@@ -7,7 +7,7 @@
 #define TAB_STOP 8
 #define QUIT_TIMES 1
 #define EXIT_KEY 113 // q
-
+#define HL_HIGHLIGHT_NUMBERS (1<<0)
 #define CTRL_KEY(k) (k & 0x1f)
 
 struct positions {
