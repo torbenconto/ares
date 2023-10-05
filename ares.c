@@ -644,6 +644,7 @@ void ares_push_cb(char *query, int key) {
       return;
     }
   }
+  return;
 }
 
 void ares_commit_cb(char *query, int key) {
