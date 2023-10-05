@@ -18,11 +18,14 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
-*/
+ */
 
 /*
- * TODO: highlight symbols, underline urls, undo and redo, handle widow resize, better terminal management (make it like its own thing not just printed text in the terminal). Fix git output showing throught editor (can be fixed by fixing the previous todo)
-*/
+ * TODO: highlight symbols, underline urls, undo and redo, handle widow resize,
+ * better terminal management (make it like its own thing not just printed text
+ * in the terminal). Fix git output showing throught editor (can be fixed by
+ * fixing the previous todo)
+ */
 
 #include <ctype.h>
 #include <errno.h>
@@ -104,11 +107,11 @@ struct State S;
 
 char *C_HL_extensions[] = {".c", ".h", ".cpp", NULL};
 char *C_HL_keywords[] = {
-    "switch",   "if",        "while",   "for",     "break",
-    "continue", "return",    "else",    "struct",  "union",
-    "typedef",  "static",    "enum",    "class",   "case",
-    "#include", "#define", "#ifndef", "#endif", "int|",      "long|",   "double|", "float|",
-    "char|",    "unsigned|", "signed|", "void|",   NULL};
+    "switch",    "if",      "while",  "for",      "break",   "continue",
+    "return",    "else",    "struct", "union",    "typedef", "static",
+    "enum",      "class",   "case",   "#include", "#define", "#ifndef",
+    "#endif",    "int|",    "long|",  "double|",  "float|",  "char|",
+    "unsigned|", "signed|", "void|",  NULL};
 
 char *Go_HL_extensions[] = {".go", NULL};
 char *Go_HL_keywords[] = {
@@ -636,8 +639,8 @@ void ares_save() {
 }
 
 void ares_push_cb(char *query, int key) {
-    if (key == 'y' || key == 'Y') {
-      int add_result = system("git push");
+  if (key == 'y' || key == 'Y') {
+    int add_result = system("git push");
 
     if (add_result != 0) {
       setStatusMessage("Git push failed");
@@ -649,7 +652,6 @@ void ares_push_cb(char *query, int key) {
 
 void ares_commit_cb(char *query, int key) {
   if (key == '\r') {
-
     char add_command[512];
 
     snprintf(add_command, sizeof(add_command), "git add %s", S.filename);
@@ -662,8 +664,8 @@ void ares_commit_cb(char *query, int key) {
     }
 
     char commit_command[512];
-    snprintf(commit_command, sizeof(commit_command),
-             "git commit -m \"%s\"", query);
+    snprintf(commit_command, sizeof(commit_command), "git commit -m \"%s\"",
+             query);
 
     int commit_result = system(commit_command);
 
@@ -683,7 +685,7 @@ void ares_commit() {
 
   char *query = ares_prompt("Commit Message: %s", ares_commit_cb);
   if (query) {
-      char *push_query = ares_prompt("Push changes (y/n): %s", ares_push_cb);
+    char *push_query = ares_prompt("Push changes (y/n): %s", ares_push_cb);
   }
 
   if (query) {
@@ -696,7 +698,7 @@ void ares_commit() {
   }
 }
 
-void ares_goto_cb(char* query, int key) {
+void ares_goto_cb(char *query, int key) {
   if (key == '\r' || key == '\x1b') {
     int target = atoi(query) - 1;
     if (target <= S.numrows && target >= 0) {
@@ -862,7 +864,7 @@ void drawRows(struct abuf *ab) {
           }
           abAppend(ab, &c[j], 1);
         } else {
-          char* color = syntaxToColor(hl[j]);
+          char *color = syntaxToColor(hl[j]);
           if (color != current_color) {
             current_color = color;
             char buf[16];
@@ -1148,7 +1150,9 @@ int main(int argc, char *argv[]) {
     ares_open(argv[1]);
   }
 
-  setStatusMessage("HELP: Ctrl-S = save | Ctrl-Q = quit | Ctrl-F = find | Ctrl-L = goto line");
+  setStatusMessage(
+      "HELP: Ctrl-S = save | Ctrl-Q = quit | Ctrl-F = find | Ctrl-L = goto "
+      "line");
 
   for (;;) {
     refreshScreen();
