@@ -376,16 +376,32 @@ void save() {
 }
 
 void ares_find_cb(char *query, int key) {
+  static int last_match = -1;
+  static int direction = 1;
   if (key == '\r' || key == '\x1b') {
+    last_match = -1;
+    direction = 1;
     return;
+  } else if (key == ARROW_RIGHT || key == ARROW_DOWN) {
+    direction = 1;
+  } else if (key == ARROW_LEFT || key == ARROW_UP) {
+    direction = -1;
+  } else {
+    last_match = -1;
+    direction = 1;
   }
-
+  if (last_match == -1) direction = 1;
+  int current = last_match;
   int i;
   for (i = 0; i < S.numrows; i++) {
-    erow *row = &S.row[i];
+    current += direction;
+    if (current == -1) current = S.numrows - 1;
+    else if (current == S.numrows) current = 0;
+    erow *row = &S.row[current];
     char *match = strstr(row->render, query);
     if (match) {
-      S.cy = i;
+      last_match = current;
+      S.cy = current;
       S.cx = rowRxToCx(row, match - row->render);
       S.rowoff = S.numrows;
       break;
@@ -394,9 +410,18 @@ void ares_find_cb(char *query, int key) {
 }
 
 void ares_find() {
+  int saved_cx = S.cx;
+  int saved_cy = S.cy;
+  int saved_coloff = S.coloff;
+  int saved_rowoff = S.rowoff;
   char *query = ares_prompt("Search: %s (ESC to cancel)", ares_find_cb);
   if (query) {
     free(query);
+  } else {
+    S.cx = saved_cx;
+    S.cy = saved_cy;
+    S.coloff = saved_coloff;
+    S.rowoff = saved_rowoff;
   }
 }
 
