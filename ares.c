@@ -18,11 +18,11 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
- */
+*/
 
 /*
- * TODO: 256 bit ANSI color code support, undo and redo, handle widow resize, better terminal management (make it like its own thing not just printed text in the terminal). Fix git output showing throught editor (can be fixed by fixing the previous todo)
- */
+ * TODO: undo and redo, handle widow resize, better terminal management (make it like its own thing not just printed text in the terminal). Fix git output showing throught editor (can be fixed by fixing the previous todo)
+*/
 
 #include <ctype.h>
 #include <errno.h>
@@ -846,11 +846,11 @@ void drawRows(struct abuf *ab) {
           }
           abAppend(ab, &c[j], 1);
         } else {
-          int color = syntaxToColor(hl[j]);
+          char* color = syntaxToColor(hl[j]);
           if (color != current_color) {
             current_color = color;
             char buf[16];
-            int clen = snprintf(buf, sizeof(buf), "\x1b[%dm", color);
+            int clen = snprintf(buf, sizeof(buf), "\x1b[%sm", color);
             abAppend(ab, buf, clen);
           }
           abAppend(ab, &c[j], 1);

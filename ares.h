@@ -3,14 +3,14 @@
 
 #define ARES_VERSION "0.0.1"
 
-// Highlight colors
-#define STRING_HIGHLIGHT_COLOR            35
-#define NUMBER_HIGHLIGHT_COLOR            36
-#define SEARCH_MATCH_HIGHLIGHT_COLOR      34
-#define KEYWORD_PRIMARY_HIGHLIGHT_COLOR   33
-#define KEYWORD_SECONDARY_HIGHLIGHT_COLOR 32
-#define COMMENT_HIGHLIGHT_COLOR           32
-#define DEFAULT_HIGHLIGHT_COLOR           31
+// Highlight colors, Can be any ansi escape, it's just plugged into an ansi format string
+#define STRING_HIGHLIGHT_COLOR            "38;5;140"
+#define NUMBER_HIGHLIGHT_COLOR            "36"
+#define SEARCH_MATCH_HIGHLIGHT_COLOR      "34"
+#define KEYWORD_PRIMARY_HIGHLIGHT_COLOR   "38;5;98"
+#define KEYWORD_SECONDARY_HIGHLIGHT_COLOR "38;5;104"
+#define COMMENT_HIGHLIGHT_COLOR           "32"
+#define DEFAULT_HIGHLIGHT_COLOR           "31"
 
 // Configuration settings
 #define SIDE_CHARACTER      "~"
