@@ -12,7 +12,7 @@
 #include <time.h>
 #include <unistd.h>
 
-enum editorKey {
+enum Keys {
   BACKSPACE = 127,
   ARROW_LEFT = 1000,
   ARROW_RIGHT,
@@ -361,6 +361,23 @@ void save() {
   setStatusMessage("Can't save! I/O error: %s", strerror(errno));
 }
 
+void ares_find() {
+  char *query = ares_prompt("Search: %s (ESC to cancel)");
+  if (query == NULL) return;
+  int i;
+  for (i = 0; i < S.numrows; i++) {
+    erow *row = &S.row[i];
+    char *match = strstr(row->render, query);
+    if (match) {
+      S.cy = i;
+      S.cx = match - row->render;
+      S.rowoff = S.numrows;
+      break;
+    }
+  }
+  free(query);
+}
+
 struct abuf {
   char *b;
   int len;
@@ -603,6 +620,10 @@ void processKeypress() {
     case DEL_KEY:
       if (c == DEL_KEY) moveCursor(ARROW_RIGHT);
       delChar();
+      break;
+
+    case CTRL_KEY('f'):
+      ares_find();
       break;
 
     case PAGE_UP:
