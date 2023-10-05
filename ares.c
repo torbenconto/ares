@@ -109,8 +109,8 @@ char *C_HL_keywords[] = {
     "typedef",  "static",    "enum",    "class",   "case",
     "#include", "int|",      "long|",   "double|", "float|",
     "char|",    "unsigned|", "signed|", "void|",   NULL};
-char *Go_HL_extensions[] = {".go", NULL};
 
+char *Go_HL_extensions[] = {".go", NULL};
 char *Go_HL_keywords[] = {
     "break", "default", "func",     "interface", "select",      "case",
     "defer", "go",      "map",      "struct",    "chan",        "else",
