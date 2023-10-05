@@ -4,6 +4,8 @@
 #define ARES_VERSION "0.0.1"
 
 // Highlight colors, Can be any ansi escape, it's just plugged into an ansi format string
+// https://user-images.githubusercontent.com/995050/47952855-ecb12480-df75-11e8-89d4-ac26c50e80b9.png
+
 #define STRING_HIGHLIGHT_COLOR            "38;5;140"
 #define NUMBER_HIGHLIGHT_COLOR            "36"
 #define SEARCH_MATCH_HIGHLIGHT_COLOR      "34"

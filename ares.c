@@ -21,7 +21,7 @@
 */
 
 /*
- * TODO: undo and redo, handle widow resize, better terminal management (make it like its own thing not just printed text in the terminal). Fix git output showing throught editor (can be fixed by fixing the previous todo)
+ * TODO: highlight symbols, underline urls, undo and redo, handle widow resize, better terminal management (make it like its own thing not just printed text in the terminal). Fix git output showing throught editor (can be fixed by fixing the previous todo)
 */
 
 #include <ctype.h>
@@ -239,10 +239,6 @@ int getCursorPosition(int *rows, int *cols) {
 
 int getWindowSize(int *rows, int *cols) {
   struct winsize ws;
-
-  if (rows != S.screenrows || cols != S.screencols) {
-    refreshScreen();
-  }
 
   if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1 || ws.ws_col == 0) {
     if (write(STDOUT_FILENO, "\x1b[999C\x1b[999B", 12) != 12) return -1;
