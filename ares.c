@@ -635,6 +635,20 @@ void ares_save() {
   setStatusMessage("Can't save! I/O error: %s", strerror(errno));
 }
 
+void ares_push_cb(char *query, int key) {
+  if (key == '\r') {
+
+    if (key == 'y' || key == 'Y') {
+      int add_result = system("git push");
+
+      if (add_result != 0) {
+        setStatusMessage("Git push failed");
+        return;
+      }
+    }
+  }
+}
+
 void ares_commit_cb(char *query, int key) {
   if (key == '\r') {
 
@@ -663,8 +677,6 @@ void ares_commit_cb(char *query, int key) {
   }
 }
 
-
-
 void ares_commit() {
   int saved_cx = S.cx;
   int saved_cy = S.cy;
@@ -672,6 +684,9 @@ void ares_commit() {
   int saved_rowoff = S.rowoff;
 
   char *query = ares_prompt("Commit Message: %s", ares_commit_cb);
+  if (query) {
+      char *push_query = ares_prompt("Push changes (y/n): %s", ares_push_cb);
+  }
 
   if (query) {
     free(query);
