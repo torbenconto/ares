@@ -13,6 +13,7 @@
 
 #define SIDE_CHARACTER "~"
 #define TAB_STOP 8
+#define TAB_WIDTH 2
 #define QUIT_TIMES 1
 #define EXIT_KEY 113 // q
 #define HL_HIGHLIGHT_NUMBERS (1<<0)

@@ -108,6 +108,16 @@ char *C_HL_keywords[] = {
   "int|", "long|", "double|", "float|", "char|", "unsigned|", "signed|",
   "void|", NULL
 };
+char *Go_HL_extensions[] = { ".go", NULL };
+
+char *Go_HL_keywords[] = {
+    "break", "default", "func", "interface", "select",
+    "case", "defer", "go", "map", "struct",
+    "chan", "else", "goto", "package", "switch",
+    "const", "fallthrough", "if", "range", "type",
+    "continue", "for", "import", "return", "var",
+    NULL
+};
 
 struct Syntax HLDB[] = {
   {
@@ -117,6 +127,13 @@ struct Syntax HLDB[] = {
     "//", "/*", "*/",
     HL_HIGHLIGHT_NUMBERS | HL_HIGHLIGHT_STRINGS
   },
+  {
+    "go",
+    Go_HL_extensions,
+    Go_HL_keywords,
+    "//", "/*", "*/",
+    HL_HIGHLIGHT_NUMBERS | HL_HIGHLIGHT_STRINGS
+  }
 };
 
 #define HLDB_ENTRIES (sizeof(HLDB) / sizeof(HLDB[0]))
@@ -987,6 +1004,12 @@ void processKeypress() {
     case ARROW_LEFT:
     case ARROW_RIGHT:
       moveCursor(c);
+      break;
+
+    case '\t':
+      for (int i = 0; i < TAB_WIDTH; i++) {
+        insertChar(32);
+      }
       break;
 
     case CTRL_KEY('l'):
