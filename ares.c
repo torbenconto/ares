@@ -636,15 +636,12 @@ void ares_save() {
 }
 
 void ares_push_cb(char *query, int key) {
-  if (key == '\r') {
-
     if (key == 'y' || key == 'Y') {
       int add_result = system("git push");
 
-      if (add_result != 0) {
-        setStatusMessage("Git push failed");
-        return;
-      }
+    if (add_result != 0) {
+      setStatusMessage("Git push failed");
+      return;
     }
   }
 }
