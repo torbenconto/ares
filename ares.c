@@ -934,7 +934,7 @@ char *ares_prompt(char *prompt, void (*callback)(char *, int)) {
   size_t buflen = 0;
   buf[0] = '\0';
 
-  while (1) {
+  for (;;) {
     setStatusMessage(prompt, buf);
     refreshScreen();
 
@@ -1114,7 +1114,7 @@ int main(int argc, char *argv[]) {
 
   setStatusMessage("HELP: Ctrl-S = save | Ctrl-Q = quit | Ctrl-F = find");
 
-  while (1) {
+  for (;;) {
     refreshScreen();
     processKeypress();
   }
