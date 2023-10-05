@@ -1128,7 +1128,7 @@ int main(int argc, char *argv[]) {
     ares_open(argv[1]);
   }
 
-  setStatusMessage("HELP: Ctrl-S = save | Ctrl-Q = quit | Ctrl-F = find");
+  setStatusMessage("HELP: Ctrl-S = save | Ctrl-Q = quit | Ctrl-F = find | Ctrl-L = goto line");
 
   for (;;) {
     refreshScreen();
