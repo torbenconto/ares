@@ -635,6 +635,54 @@ void ares_save() {
   setStatusMessage("Can't save! I/O error: %s", strerror(errno));
 }
 
+void ares_commit_cb(char *query, int key) {
+  if (key == '\r') {
+
+    char add_command[512];
+
+    snprintf(add_command, sizeof(add_command), "git add %s", S.filename);
+
+    int add_result = system(add_command);
+
+    if (add_result != 0) {
+      setStatusMessage("Git add failed");
+      return;
+    }
+
+    char commit_command[512];
+    snprintf(commit_command, sizeof(commit_command),
+             "git commit -m \"%s\"", query);
+
+    int commit_result = system(commit_command);
+
+    if (commit_result == 0) {
+      setStatusMessage("Commit successful");
+    } else {
+      setStatusMessage("Commit failed");
+    }
+  }
+}
+
+
+
+void ares_commit() {
+  int saved_cx = S.cx;
+  int saved_cy = S.cy;
+  int saved_coloff = S.coloff;
+  int saved_rowoff = S.rowoff;
+
+  char *query = ares_prompt("Commit Message: %s", ares_commit_cb);
+
+  if (query) {
+    free(query);
+  } else {
+    S.cx = saved_cx;
+    S.cy = saved_cy;
+    S.coloff = saved_coloff;
+    S.rowoff = saved_rowoff;
+  }
+}
+
 void ares_find_cb(char *query, int key) {
   static int last_match = -1;
   static int direction = 1;
@@ -965,6 +1013,10 @@ void processKeypress() {
       write(STDOUT_FILENO, "\x1b[2J", 4);
       write(STDOUT_FILENO, "\x1b[H", 3);
       exit(0);
+      break;
+
+    case CTRL_KEY('g'):
+      ares_commit();
       break;
 
     case CTRL_KEY('s'):
