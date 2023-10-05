@@ -18,18 +18,17 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
-*/
+ */
 
 /*
-* TODO: 256 bit ANSI color code support, undo and redo
-*/
+ * TODO: 256 bit ANSI color code support, undo and redo
+ */
 
-#include "ares.h"
 #include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <stdio.h>
 #include <stdarg.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/ioctl.h>
@@ -37,6 +36,8 @@
 #include <termios.h>
 #include <time.h>
 #include <unistd.h>
+
+#include "ares.h"
 
 enum Key {
   BACKSPACE = 127,
@@ -101,40 +102,26 @@ struct State {
 
 struct State S;
 
-char *C_HL_extensions[] = { ".c", ".h", ".cpp", NULL };
+char *C_HL_extensions[] = {".c", ".h", ".cpp", NULL};
 char *C_HL_keywords[] = {
-  "switch", "if", "while", "for", "break", "continue", "return", "else",
-  "struct", "union", "typedef", "static", "enum", "class", "case", "#include",
-  "int|", "long|", "double|", "float|", "char|", "unsigned|", "signed|",
-  "void|", NULL
-};
-char *Go_HL_extensions[] = { ".go", NULL };
+    "switch",   "if",        "while",   "for",     "break",
+    "continue", "return",    "else",    "struct",  "union",
+    "typedef",  "static",    "enum",    "class",   "case",
+    "#include", "int|",      "long|",   "double|", "float|",
+    "char|",    "unsigned|", "signed|", "void|",   NULL};
+char *Go_HL_extensions[] = {".go", NULL};
 
 char *Go_HL_keywords[] = {
-    "break", "default", "func", "interface", "select",
-    "case", "defer", "go", "map", "struct",
-    "chan", "else", "goto", "package", "switch",
-    "const", "fallthrough", "if", "range", "type",
-    "continue", "for", "import", "return", "var",
-    NULL
-};
+    "break", "default", "func",     "interface", "select",      "case",
+    "defer", "go",      "map",      "struct",    "chan",        "else",
+    "goto",  "package", "switch",   "const",     "fallthrough", "if",
+    "range", "type",    "continue", "for",       "import",      "return",
+    "var",   NULL};
 
-struct Syntax HLDB[] = {
-  {
-    "c",
-    C_HL_extensions,
-    C_HL_keywords,
-    "//", "/*", "*/",
-    HL_HIGHLIGHT_NUMBERS | HL_HIGHLIGHT_STRINGS
-  },
-  {
-    "go",
-    Go_HL_extensions,
-    Go_HL_keywords,
-    "//", "/*", "*/",
-    HL_HIGHLIGHT_NUMBERS | HL_HIGHLIGHT_STRINGS
-  }
-};
+struct Syntax HLDB[] = {{"c", C_HL_extensions, C_HL_keywords, "//", "/*", "*/",
+                         HL_HIGHLIGHT_NUMBERS | HL_HIGHLIGHT_STRINGS},
+                        {"go", Go_HL_extensions, Go_HL_keywords, "//", "/*",
+                         "*/", HL_HIGHLIGHT_NUMBERS | HL_HIGHLIGHT_STRINGS}};
 
 #define HLDB_ENTRIES (sizeof(HLDB) / sizeof(HLDB[0]))
 
@@ -184,29 +171,44 @@ int readKey() {
         if (read(STDIN_FILENO, &seq[2], 1) != 1) return '\x1b';
         if (seq[2] == '~') {
           switch (seq[1]) {
-            case '1': return HOME_KEY;
-            case '3': return DEL_KEY;
-            case '4': return END_KEY;
-            case '5': return PAGE_UP;
-            case '6': return PAGE_DOWN;
-            case '7': return HOME_KEY;
-            case '8': return END_KEY;
+            case '1':
+              return HOME_KEY;
+            case '3':
+              return DEL_KEY;
+            case '4':
+              return END_KEY;
+            case '5':
+              return PAGE_UP;
+            case '6':
+              return PAGE_DOWN;
+            case '7':
+              return HOME_KEY;
+            case '8':
+              return END_KEY;
           }
         }
       } else {
         switch (seq[1]) {
-          case 'A': return ARROW_UP;
-          case 'B': return ARROW_DOWN;
-          case 'C': return ARROW_RIGHT;
-          case 'D': return ARROW_LEFT;
-          case 'H': return HOME_KEY;
-          case 'F': return END_KEY;
+          case 'A':
+            return ARROW_UP;
+          case 'B':
+            return ARROW_DOWN;
+          case 'C':
+            return ARROW_RIGHT;
+          case 'D':
+            return ARROW_LEFT;
+          case 'H':
+            return HOME_KEY;
+          case 'F':
+            return END_KEY;
         }
       }
     } else if (seq[0] == 'O') {
       switch (seq[1]) {
-        case 'H': return HOME_KEY;
-        case 'F': return END_KEY;
+        case 'H':
+          return HOME_KEY;
+        case 'F':
+          return END_KEY;
       }
     }
 
@@ -253,9 +255,9 @@ int is_separator(int c) {
 }
 
 void updateSyntax(erow *row) {
-    row->hl = realloc(row->hl, row->rsize);
+  row->hl = realloc(row->hl, row->rsize);
   memset(row->hl, HL_NORMAL, row->rsize);
-  
+
   if (S.syntax == NULL) return;
 
   char **keywords = S.syntax->keywords;
@@ -344,7 +346,8 @@ void updateSyntax(erow *row) {
         if (kw2) klen--;
         if (!strncmp(&row->render[i], keywords[j], klen) &&
             is_separator(row->render[i + klen])) {
-          memset(&row->hl[i], kw2 ? HL_KEYWORD_SECONDARY : HL_KEYWORD_PRIMARY, klen);
+          memset(&row->hl[i], kw2 ? HL_KEYWORD_SECONDARY : HL_KEYWORD_PRIMARY,
+                 klen);
           i += klen;
           break;
         }
@@ -359,21 +362,26 @@ void updateSyntax(erow *row) {
   }
   int changed = (row->hl_open_comment != in_comment);
   row->hl_open_comment = in_comment;
-  if (changed && row->idx + 1 < S.numrows)
-    updateSyntax(&S.row[row->idx + 1]);
+  if (changed && row->idx + 1 < S.numrows) updateSyntax(&S.row[row->idx + 1]);
 }
 
 int syntaxToColor(int hl) {
   switch (hl) {
-    case HL_STRING: return STRING_HIGHLIGHT_COLOR;
-    case HL_NUMBER: return NUMBER_HIGHLIGHT_COLOR;
+    case HL_STRING:
+      return STRING_HIGHLIGHT_COLOR;
+    case HL_NUMBER:
+      return NUMBER_HIGHLIGHT_COLOR;
     case HL_COMMENT:
     case HL_ML_COMMENT:
       return COMMENT_HIGHLIGHT_COLOR;
-    case HL_MATCH: return SEARCH_MATCH_HIGHLIGHT_COLOR;
-    case HL_KEYWORD_PRIMARY: return KEYWORD_PRIMARY_HIGHLIGHT_COLOR;
-    case HL_KEYWORD_SECONDARY: return KEYWORD_SECONDARY_HIGHLIGHT_COLOR;
-    default: return DEFAULT_HIGHLIGHT_COLOR;
+    case HL_MATCH:
+      return SEARCH_MATCH_HIGHLIGHT_COLOR;
+    case HL_KEYWORD_PRIMARY:
+      return KEYWORD_PRIMARY_HIGHLIGHT_COLOR;
+    case HL_KEYWORD_SECONDARY:
+      return KEYWORD_SECONDARY_HIGHLIGHT_COLOR;
+    default:
+      return DEFAULT_HIGHLIGHT_COLOR;
   }
 }
 
@@ -408,8 +416,7 @@ int rowCxToRx(erow *row, int cx) {
   int rx = 0;
   int j;
   for (j = 0; j < cx; j++) {
-    if (row->chars[j] == '\t')
-      rx += (TAB_STOP - 1) - (rx % TAB_STOP);
+    if (row->chars[j] == '\t') rx += (TAB_STOP - 1) - (rx % TAB_STOP);
     rx++;
   }
   return rx;
@@ -419,8 +426,7 @@ int rowRxToCx(erow *row, int rx) {
   int cur_rx = 0;
   int cx;
   for (cx = 0; cx < row->size; cx++) {
-    if (row->chars[cx] == '\t')
-      cur_rx += (TAB_STOP - 1) - (cur_rx % TAB_STOP);
+    if (row->chars[cx] == '\t') cur_rx += (TAB_STOP - 1) - (cur_rx % TAB_STOP);
     cur_rx++;
 
     if (cur_rx > rx) return cx;
@@ -435,7 +441,7 @@ void updateRow(erow *row) {
     if (row->chars[j] == '\t') tabs++;
 
   free(row->render);
-  row->render = malloc(row->size + tabs*(TAB_STOP - 1) + 1);
+  row->render = malloc(row->size + tabs * (TAB_STOP - 1) + 1);
 
   int idx = 0;
   for (j = 0; j < row->size; j++) {
@@ -560,8 +566,7 @@ void delChar() {
 char *rowsToString(int *buflen) {
   int totlen = 0;
   int j;
-  for (j = 0; j < S.numrows; j++)
-    totlen += S.row[j].size + 1;
+  for (j = 0; j < S.numrows; j++) totlen += S.row[j].size + 1;
   *buflen = totlen;
 
   char *buf = malloc(totlen);
@@ -589,8 +594,8 @@ void ares_open(char *filename) {
   size_t linecap = 0;
   ssize_t linelen;
   while ((linelen = getline(&line, &linecap, fp)) != -1) {
-    while (linelen > 0 && (line[linelen - 1] == '\n' ||
-                           line[linelen - 1] == '\r'))
+    while (linelen > 0 &&
+           (line[linelen - 1] == '\n' || line[linelen - 1] == '\r'))
       linelen--;
     insertRow(S.numrows, line, linelen);
   }
@@ -661,8 +666,10 @@ void ares_find_cb(char *query, int key) {
   int i;
   for (i = 0; i < S.numrows; i++) {
     current += direction;
-    if (current == -1) current = S.numrows - 1;
-    else if (current == S.numrows) current = 0;
+    if (current == -1)
+      current = S.numrows - 1;
+    else if (current == S.numrows)
+      current = 0;
 
     erow *row = &S.row[current];
     char *match = strstr(row->render, query);
@@ -687,8 +694,7 @@ void ares_find() {
   int saved_coloff = S.coloff;
   int saved_rowoff = S.rowoff;
 
-  char *query = ares_prompt("Search: %s (Use ESC/Arrows/Enter)",
-                            ares_find_cb);
+  char *query = ares_prompt("Search: %s (Use ESC/Arrows/Enter)", ares_find_cb);
 
   if (query) {
     free(query);
@@ -705,7 +711,8 @@ struct abuf {
   int len;
 };
 
-#define ABUF_INIT {NULL, 0}
+#define ABUF_INIT \
+  { NULL, 0 }
 
 void abAppend(struct abuf *ab, const char *s, int len) {
   char *new = realloc(ab->b, ab->len + len);
@@ -716,9 +723,7 @@ void abAppend(struct abuf *ab, const char *s, int len) {
   ab->len += len;
 }
 
-void abFree(struct abuf *ab) {
-  free(ab->b);
-}
+void abFree(struct abuf *ab) { free(ab->b); }
 
 void scroll() {
   S.rx = 0;
@@ -748,7 +753,7 @@ void drawRows(struct abuf *ab) {
       if (S.numrows == 0 && y == S.screenrows / 3) {
         char welcome[80];
         int welcomelen = snprintf(welcome, sizeof(welcome),
-          "Ares -- version %s", ARES_VERSION);
+                                  "Ares -- version %s", ARES_VERSION);
         if (welcomelen > S.screencols) welcomelen = S.screencols;
         int padding = (S.screencols - welcomelen) / 2;
         if (padding) {
@@ -808,10 +813,11 @@ void drawStatusBar(struct abuf *ab) {
   abAppend(ab, "\x1b[7m", 4);
   char status[80], rstatus[80];
   int len = snprintf(status, sizeof(status), "%.20s - %d lines %s",
-    S.filename ? S.filename : "[No Name]", S.numrows,
-    S.dirty ? "(modified)" : "");
-  int rlen = snprintf(rstatus, sizeof(rstatus), "%s | %d/%d",
-    S.syntax ? S.syntax->filetype : "no ft", S.cy + 1, S.numrows);
+                     S.filename ? S.filename : "[No Name]", S.numrows,
+                     S.dirty ? "(modified)" : "");
+  int rlen =
+      snprintf(rstatus, sizeof(rstatus), "%s | %d/%d",
+               S.syntax ? S.syntax->filetype : "no ft", S.cy + 1, S.numrows);
   if (len > S.screencols) len = S.screencols;
   abAppend(ab, status, len);
   while (len < S.screencols) {
@@ -849,7 +855,7 @@ void refreshScreen() {
 
   char buf[32];
   snprintf(buf, sizeof(buf), "\x1b[%d;%dH", (S.cy - S.rowoff) + 1,
-                                            (S.rx - S.coloff) + 1);
+           (S.rx - S.coloff) + 1);
   abAppend(&ab, buf, strlen(buf));
 
   abAppend(&ab, "\x1b[?25h", 6);
@@ -949,8 +955,10 @@ void processKeypress() {
 
     case CTRL_KEY(EXIT_KEY):
       if (S.dirty && quit_times > 0) {
-        setStatusMessage("File has unsaved changes. "
-          "Press Ctrl-Q %d more times to quit.", quit_times);
+        setStatusMessage(
+            "File has unsaved changes. "
+            "Press Ctrl-Q %d more times to quit.",
+            quit_times);
         quit_times--;
         return;
       }
@@ -968,8 +976,7 @@ void processKeypress() {
       break;
 
     case END_KEY:
-      if (S.cy < S.numrows)
-        S.cx = S.row[S.cy].size;
+      if (S.cy < S.numrows) S.cx = S.row[S.cy].size;
       break;
 
     case CTRL_KEY('f'):
@@ -984,20 +991,17 @@ void processKeypress() {
       break;
 
     case PAGE_UP:
-    case PAGE_DOWN:
-      {
-        if (c == PAGE_UP) {
-          S.cy = S.rowoff;
-        } else if (c == PAGE_DOWN) {
-          S.cy = S.rowoff + S.screenrows - 1;
-          if (S.cy > S.numrows) S.cy = S.numrows;
-        }
-
-        int times = S.screenrows;
-        while (times--)
-          moveCursor(c == PAGE_UP ? ARROW_UP : ARROW_DOWN);
+    case PAGE_DOWN: {
+      if (c == PAGE_UP) {
+        S.cy = S.rowoff;
+      } else if (c == PAGE_DOWN) {
+        S.cy = S.rowoff + S.screenrows - 1;
+        if (S.cy > S.numrows) S.cy = S.numrows;
       }
-      break;
+
+      int times = S.screenrows;
+      while (times--) moveCursor(c == PAGE_UP ? ARROW_UP : ARROW_DOWN);
+    } break;
 
     case ARROW_UP:
     case ARROW_DOWN:
@@ -1049,8 +1053,7 @@ int main(int argc, char *argv[]) {
     ares_open(argv[1]);
   }
 
-  setStatusMessage(
-    "HELP: Ctrl-S = save | Ctrl-Q = quit | Ctrl-F = find");
+  setStatusMessage("HELP: Ctrl-S = save | Ctrl-Q = quit | Ctrl-F = find");
 
   while (1) {
     refreshScreen();
