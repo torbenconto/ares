@@ -32,7 +32,6 @@ struct positions {
     int y;
 };
 
-// Function prototypes
 void die(const char *e);
 void setStatusMessage(const char *fmt, ...);
 void refreshScreen();
