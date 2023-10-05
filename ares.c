@@ -25,9 +25,16 @@ enum Keys {
   PAGE_DOWN
 };
 
+enum Highlight {
+  HL_NORMAL = 0,
+  HL_NUMBER,
+  HL_MATCH
+};
+
 typedef struct erow {
   int size;
   int rsize;
+  unsigned char *hl;
   char *chars;
   char *render;
 } erow;
@@ -56,6 +63,10 @@ void die(const char *s) {
 
   perror(s);
   exit(1);
+}
+
+int is_separator(int c) {
+  return isspace(c) || c == '\0' || strchr(",.()+-/*=~%<>[];", c) != NULL;
 }
 
 void disableRawMode() {
@@ -205,6 +216,8 @@ void updateRow(erow *row) {
   }
   row->render[idx] = '\0';
   row->rsize = idx;
+
+  updateSyntax(row);
 }
 
 void insertRow(int at, char *s, size_t len) {
@@ -220,6 +233,7 @@ void insertRow(int at, char *s, size_t len) {
 
   S.row[at].rsize = 0;
   S.row[at].render = NULL;
+  S.row[at].hl = NULL;
   updateRow(&S.row[at]);
 
   S.numrows++;
@@ -229,6 +243,7 @@ void insertRow(int at, char *s, size_t len) {
 void freeRow(erow *row) {
   free(row->render);
   free(row->chars);
+  free(row->hl);
 }
 
 void delRow(int at) {
@@ -376,6 +391,13 @@ void save() {
 }
 
 void ares_find_cb(char *query, int key) {
+  static int saved_hl_line;
+  static char *saved_hl = NULL;
+  if (saved_hl) {
+    memcpy(S.row[saved_hl_line].hl, saved_hl, S.row[saved_hl_line].rsize);
+    free(saved_hl);
+    saved_hl = NULL;
+  }
   static int last_match = -1;
   static int direction = 1;
   if (key == '\r' || key == '\x1b') {
@@ -404,6 +426,11 @@ void ares_find_cb(char *query, int key) {
       S.cy = current;
       S.cx = rowRxToCx(row, match - row->render);
       S.rowoff = S.numrows;
+
+      saved_hl_line = current;
+      saved_hl = malloc(row->rsize);
+      memcpy(saved_hl, row->hl, row->rsize);
+      memset(&row->hl[match - row->render], HL_MATCH, strlen(query));
       break;
     }
   }
@@ -466,7 +493,7 @@ void scroll() {
 }
 
 void drawRows(struct abuf *ab) {
-  int y;
+    int y;
   for (y = 0; y < S.screenrows; y++) {
     int filerow = y + S.rowoff;
     if (filerow >= S.numrows) {
@@ -489,9 +516,27 @@ void drawRows(struct abuf *ab) {
       int len = S.row[filerow].rsize - S.coloff;
       if (len < 0) len = 0;
       if (len > S.screencols) len = S.screencols;
-      abAppend(ab, &S.row[filerow].render[S.coloff], len);
+      char *c = &S.row[filerow].render[S.coloff];
+      unsigned char *hl = &S.row[filerow].hl[S.coloff];
+      int current_color = -1;
+      int j;
+      for (j = 0; j < len; j++) {
+        if (hl[j] == HL_NORMAL) {
+          if (current_color != -1) {
+            abAppend(ab, "\x1b[39m", 5);
+            current_color = -1;
+          }
+          abAppend(ab, &c[j], 1);
+        } else {
+          int color = syntaxToColor(hl[j]);
+          char buf[16];
+          int clen = snprintf(buf, sizeof(buf), "\x1b[%dm", color);
+          abAppend(ab, buf, clen);
+          abAppend(ab, &c[j], 1);
+        }
+      }
+      abAppend(ab, "\x1b[39m", 5);
     }
-
     abAppend(ab, "\x1b[K", 3);
     abAppend(ab, "\r\n", 2);
   }
@@ -709,6 +754,34 @@ void processKeypress() {
   }
 
   quit_times = QUIT_TIMES;
+}
+
+void updateSyntax(erow *row) {
+  row->hl = realloc(row->hl, row->rsize);
+  memset(row->hl, HL_NORMAL, row->rsize);
+  int prev_sep = 1;
+  int i = 0;
+  while (i < row->rsize) {
+    char c = row->render[i];
+    unsigned char prev_hl = (i > 0) ? row->hl[i - 1] : HL_NORMAL;
+    if ((isdigit(c) && (prev_sep || prev_hl == HL_NUMBER)) ||
+        (c == '.' && prev_hl == HL_NUMBER)) {
+      row->hl[i] = HL_NUMBER;
+      i++;
+      prev_sep = 0;
+      continue;
+    }
+    prev_sep = is_separator(c);
+    i++;
+  }
+}
+
+int syntaxToColor(int hl) {
+  switch (hl) {
+    case HL_NUMBER: return 31;
+    case HL_MATCH: return 34;
+    default: return 37;
+  }
 }
 
 void initEditor() {
