@@ -29,7 +29,7 @@
 // https://user-images.githubusercontent.com/995050/47952855-ecb12480-df75-11e8-89d4-ac26c50e80b9.png
 
 #define STRING_HIGHLIGHT_COLOR            "38;5;140"
-#define NUMBER_HIGHLIGHT_COLOR            "36"
+#define NUMBER_HIGHLIGHT_COLOR            "38;5;117"
 #define SEARCH_MATCH_HIGHLIGHT_COLOR      "38;5;105"
 #define KEYWORD_PRIMARY_HIGHLIGHT_COLOR   "38;5;98"
 #define KEYWORD_SECONDARY_HIGHLIGHT_COLOR "38;5;104"
