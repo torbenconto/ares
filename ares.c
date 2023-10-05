@@ -749,20 +749,10 @@ void ares_find_cb(char *query, int key) {
 }
 
 void ares_find() {
-  int saved_cx = S.cx;
-  int saved_cy = S.cy;
-  int saved_coloff = S.coloff;
-  int saved_rowoff = S.rowoff;
-
   char *query = ares_prompt("Search: %s (Use ESC/Arrows/Enter)", ares_find_cb);
 
   if (query) {
     free(query);
-  } else {
-    S.cx = saved_cx;
-    S.cy = saved_cy;
-    S.coloff = saved_coloff;
-    S.rowoff = saved_rowoff;
   }
 }
 
