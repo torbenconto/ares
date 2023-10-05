@@ -221,9 +221,9 @@ void updateSyntax(erow *row) {
 
 int syntaxToColor(int hl) {
   switch (hl) {
-    case HL_NUMBER: return 31;
-    case HL_MATCH: return 34;
-    default: return 37;
+    case HL_NUMBER: return NUMBER_HIGHLIGHT_COLOR;
+    case HL_MATCH: return SEARCH_MATCH_HIGHLIGHT_COLOR;
+    default: return DEFAULT_HIGHLIGHT_COLOR;
   }
 }
 

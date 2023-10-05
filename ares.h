@@ -3,6 +3,11 @@
 
 #define ARES_VERSION "0.0.1"
 
+// TODO: 256 ANSI color code support
+#define NUMBER_HIGHLIGHT_COLOR 36
+#define SEARCH_MATCH_HIGHLIGHT_COLOR 34
+#define DEFAULT_HIGHLIGHT_COLOR 31
+
 #define SIDE_CHARACTER "~"
 #define TAB_STOP 8
 #define QUIT_TIMES 1
