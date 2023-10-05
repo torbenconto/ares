@@ -18,11 +18,12 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
- */
+*/
 
 /*
-* TODO: 256 bit ANSI color code support, undo and redo, multiline comment highlighting
+* TODO: 256 bit ANSI color code support, undo and redo
 */
+
 #include "ares.h"
 #include <ctype.h>
 #include <errno.h>
@@ -57,7 +58,8 @@ enum Highlight {
   HL_STRING,
   HL_KEYWORD_PRIMARY,
   HL_KEYWORD_SECONDARY,
-  HL_COMMENT
+  HL_COMMENT,
+  HL_ML_COMMENT
 };
 
 struct Syntax {
@@ -65,15 +67,19 @@ struct Syntax {
   char **filematch;
   char **keywords;
   char *singleline_comment_start;
+  char *multiline_comment_start;
+  char *multiline_comment_end;
   int flags;
 };
 
 typedef struct erow {
+  int idx;
   int size;
   int rsize;
   char *chars;
   char *render;
   unsigned char *hl;
+  int hl_open_comment;
 } erow;
 
 struct State {
@@ -98,7 +104,7 @@ struct State S;
 char *C_HL_extensions[] = { ".c", ".h", ".cpp", NULL };
 char *C_HL_keywords[] = {
   "switch", "if", "while", "for", "break", "continue", "return", "else",
-  "struct", "union", "typedef", "static", "enum", "class", "case",
+  "struct", "union", "typedef", "static", "enum", "class", "case", "#include",
   "int|", "long|", "double|", "float|", "char|", "unsigned|", "signed|",
   "void|", NULL
 };
@@ -108,7 +114,7 @@ struct Syntax HLDB[] = {
     "c",
     C_HL_extensions,
     C_HL_keywords,
-    "//",
+    "//", "/*", "*/",
     HL_HIGHLIGHT_NUMBERS | HL_HIGHLIGHT_STRINGS
   },
 };
@@ -238,19 +244,47 @@ void updateSyntax(erow *row) {
   char **keywords = S.syntax->keywords;
 
   char *scs = S.syntax->singleline_comment_start;
+  char *mcs = S.syntax->multiline_comment_start;
+  char *mce = S.syntax->multiline_comment_end;
+
   int scs_len = scs ? strlen(scs) : 0;
+  int mcs_len = mcs ? strlen(mcs) : 0;
+  int mce_len = mce ? strlen(mce) : 0;
 
   int prev_sep = 1;
   int in_string = 0;
+  int in_comment = (row->idx > 0 && S.row[row->idx - 1].hl_open_comment);
+
   int i = 0;
   while (i < row->rsize) {
     char c = row->render[i];
     unsigned char prev_hl = (i > 0) ? row->hl[i - 1] : HL_NORMAL;
 
-    if (scs_len && !in_string) {
+    if (scs_len && !in_string && !in_comment) {
       if (!strncmp(&row->render[i], scs, scs_len)) {
         memset(&row->hl[i], HL_COMMENT, row->rsize - i);
         break;
+      }
+    }
+
+    if (mcs_len && mce_len && !in_string) {
+      if (in_comment) {
+        row->hl[i] = HL_ML_COMMENT;
+        if (!strncmp(&row->render[i], mce, mce_len)) {
+          memset(&row->hl[i], HL_ML_COMMENT, mce_len);
+          i += mce_len;
+          in_comment = 0;
+          prev_sep = 1;
+          continue;
+        } else {
+          i++;
+          continue;
+        }
+      } else if (!strncmp(&row->render[i], mcs, mcs_len)) {
+        memset(&row->hl[i], HL_ML_COMMENT, mcs_len);
+        i += mcs_len;
+        in_comment = 1;
+        continue;
       }
     }
 
@@ -306,13 +340,19 @@ void updateSyntax(erow *row) {
     prev_sep = is_separator(c);
     i++;
   }
+  int changed = (row->hl_open_comment != in_comment);
+  row->hl_open_comment = in_comment;
+  if (changed && row->idx + 1 < S.numrows)
+    updateSyntax(&S.row[row->idx + 1]);
 }
 
 int syntaxToColor(int hl) {
   switch (hl) {
     case HL_STRING: return STRING_HIGHLIGHT_COLOR;
     case HL_NUMBER: return NUMBER_HIGHLIGHT_COLOR;
-    case HL_COMMENT: return COMMENT_HIGHLIGHT_COLOR;
+    case HL_COMMENT:
+    case HL_ML_COMMENT:
+      return COMMENT_HIGHLIGHT_COLOR;
     case HL_MATCH: return SEARCH_MATCH_HIGHLIGHT_COLOR;
     case HL_KEYWORD_PRIMARY: return KEYWORD_PRIMARY_HIGHLIGHT_COLOR;
     case HL_KEYWORD_SECONDARY: return KEYWORD_SECONDARY_HIGHLIGHT_COLOR;
@@ -400,6 +440,9 @@ void insertRow(int at, char *s, size_t len) {
 
   S.row = realloc(S.row, sizeof(erow) * (S.numrows + 1));
   memmove(&S.row[at + 1], &S.row[at], sizeof(erow) * (S.numrows - at));
+  for (int j = at + 1; j <= S.numrows; j++) S.row[j].idx++;
+
+  S.row[at].idx = at;
 
   S.row[at].size = len;
   S.row[at].chars = malloc(len + 1);
@@ -409,6 +452,7 @@ void insertRow(int at, char *s, size_t len) {
   S.row[at].rsize = 0;
   S.row[at].render = NULL;
   S.row[at].hl = NULL;
+  S.row[at].hl_open_comment = 0;
   updateRow(&S.row[at]);
 
   S.numrows++;
@@ -425,6 +469,7 @@ void delRow(int at) {
   if (at < 0 || at >= S.numrows) return;
   freeRow(&S.row[at]);
   memmove(&S.row[at], &S.row[at + 1], sizeof(erow) * (S.numrows - at - 1));
+  for (int j = at; j < S.numrows - 1; j++) S.row[j].idx--;
   S.numrows--;
   S.dirty++;
 }
