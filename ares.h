@@ -57,8 +57,11 @@ struct positions {
 };
 
 void die(const char *e);
+
+void disableRawMode();
+void enableRawMode();
+
 void setStatusMessage(const char *fmt, ...);
-void refreshScreen();
 char *ares_prompt(char *prompt, void (*callback)(char *, int));
 
 #endif
