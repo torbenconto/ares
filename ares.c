@@ -900,14 +900,14 @@ void drawRows(struct abuf* ab)
           welcomelen = S.screencols;
         int padding = (S.screencols - welcomelen) / 2;
         if (padding) {
-          abAppend(ab, "~", 1);
+          abAppend(ab, SIDE_CHARACTER, 1);
           padding--;
         }
         while (padding--)
           abAppend(ab, " ", 1);
         abAppend(ab, welcome, welcomelen);
       } else {
-        abAppend(ab, "~", 1);
+        abAppend(ab, SIDE_CHARACTER, 1);
       }
     } else {
       int len = S.row[filerow].rsize - S.coloff;
