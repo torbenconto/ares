@@ -23,7 +23,7 @@
 #ifndef ARES
 #define ARES
 
-#define ARES_VERSION "0.0.1"
+#define ARES_VERSION "1.0.0"
 
 // Highlight colors, Can be any ansi escape, it's just plugged into an ansi format string
 // https://user-images.githubusercontent.com/995050/47952855-ecb12480-df75-11e8-89d4-ac26c50e80b9.png
@@ -56,18 +56,40 @@ struct positions {
     int y;
 };
 
-void die(const char *e);
-
+void die(const char* s);
 void disableRawMode();
 void enableRawMode();
-
 int readKey();
 int getCursorPosition(int* rows, int* cols);
 int getWindowSize(int* rows, int* cols);
-
 int is_separator(int c);
-
-void setStatusMessage(const char *fmt, ...);
-char *ares_prompt(char *prompt, void (*callback)(char *, int));
+void updateSyntax(erow* row);
+int syntaxToColor(int hl);
+void selectSyntaxHighlight();
+int rowCxToRx(erow* row, int cx);
+int rowRxToCx(erow* row, int rx);
+void updateRow(erow* row);
+void insertRow(int at, char* s, size_t len);
+void freeRow(erow* row);
+void delRow(int at);
+void rowInsertChar(erow* row, int at, int c);
+void rowAppendString(erow* row, char* s, size_t len);
+void rowDelChar(erow* row, int at);
+void insertChar(int c);
+void insertNewline();
+void delChar();
+char* rowsToString(int* buflen);
+void ares_open(char* filename);
+void ares_save();
+void ares_push_cb(char* query, int key);
+void ares_commit_cb(char* query, int key);
+void ares_commit();
+void ares_goto_cb(char* query, int key);
+void ares_goto();
+void ares_find_cb(char* query, int key);
+void ares_find();
+void drawRows(struct abuf* ab);
+void drawStatusBar(struct abuf* ab);
+void drawMessageBar(struct abuf* ab);
 
 #endif
