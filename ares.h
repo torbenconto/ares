@@ -61,6 +61,8 @@ void die(const char *e);
 void disableRawMode();
 void enableRawMode();
 
+int readKey();
+
 void setStatusMessage(const char *fmt, ...);
 char *ares_prompt(char *prompt, void (*callback)(char *, int));
 
