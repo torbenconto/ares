@@ -62,6 +62,7 @@ void disableRawMode();
 void enableRawMode();
 
 int readKey();
+int getCursorPosition(int* rows, int* cols);
 
 void setStatusMessage(const char *fmt, ...);
 char *ares_prompt(char *prompt, void (*callback)(char *, int));
