@@ -50,12 +50,6 @@
 // Function to clear the CTRL key
 #define CTRL_KEY(k) (k & 0x1f)
 
-// Data structure for positions
-struct positions {
-    int x;
-    int y;
-};
-
 void die(const char *e);
 
 void setStatusMessage(const char *fmt, ...);
