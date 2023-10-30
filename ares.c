@@ -112,7 +112,7 @@ char* C_HL_keywords[] = { "switch", "if", "while", "for", "break", "continue",
   "double|", "float|", "char|", "unsigned|", "signed|", "void|", NULL };
 
 char *HERA_HL_extensions[] = {".he", NULL};
-char *HERA_HL_keywords[] = {"ADD", "SUB", "MUL", "DIV", "LOOP", "PRINT", "INT", "FLOAT", "STR", "IF", "END" NULL};
+char *HERA_HL_keywords[] = {"ADD", "SUB", "MUL", "DIV", "LOOP", "PRINT", "INT", "FLOAT", "STR", "IF", "END", NULL};
 
 char* Go_HL_extensions[] = { ".go", NULL };
 char* Go_HL_keywords[] = { "break", "default", "func", "interface", "select",
