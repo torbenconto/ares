@@ -125,7 +125,7 @@ struct Syntax HLDB[]
             HL_HIGHLIGHT_NUMBERS | HL_HIGHLIGHT_STRINGS },
         { "go", Go_HL_extensions, Go_HL_keywords, "//", "/*", "*/",
             HL_HIGHLIGHT_NUMBERS | HL_HIGHLIGHT_STRINGS },
-        { "hera", HERA_HL_extensions, HERA_HL_keywords, "#",
+        { "hera", HERA_HL_extensions, HERA_HL_keywords, "#", "#", "#",
          HL_HIGHLIGHT_NUMBERS | HL_HIGHLIGHT_STRINGS }
  };
 
