@@ -395,7 +395,7 @@ void updateSyntax(erow* row)
     updateSyntax(&S.row[row->idx + 1]);
 }
 
-int syntaxToColor(int hl)
+char* syntaxToColor(int hl)
 {
   switch (hl) {
   case HL_STRING:
@@ -923,7 +923,7 @@ void drawRows(struct abuf* ab)
         len = S.screencols;
       char* c = &S.row[filerow].render[S.coloff];
       unsigned char* hl = &S.row[filerow].hl[S.coloff];
-      int current_color = -1;
+      char current_color;
       int j;
       for (j = 0; j < len; j++) {
         if (iscntrl(c[j])) {
@@ -944,8 +944,8 @@ void drawRows(struct abuf* ab)
           abAppend(ab, &c[j], 1);
         } else {
           char* color = syntaxToColor(hl[j]);
-          if (color != current_color) {
-            current_color = color;
+          if (*color != current_color) {
+            current_color = *color;
             char buf[16];
             int clen = snprintf(buf, sizeof(buf), "\x1b[%sm", color);
             abAppend(ab, buf, clen);
